@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "./SearchBar";
 import MenuCategories from "./MenuCategories";
 import PricingArea from "./PricingArea";
@@ -27,6 +28,7 @@ interface LastBillDetails {
 }
 
 const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
+  const navigate = useNavigate();
   const [customerName, setCustomerName] = useState("");
   const [menus, setMenus] = useState<Menu[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -45,7 +47,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
   }, []);
 
   const handleAddCustomer = () => {
-    console.log("Add customer clicked");
+    navigate('/customer-details');
   };
 
   const handleCustomerNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
