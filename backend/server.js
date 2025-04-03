@@ -38,26 +38,18 @@ app.get('/api/bill-items', async (req, res) => {
 
 // Add new bill item
 app.post('/api/bill-items', async (req, res) => {
+  console.log('Received request to save bill:', req.body);
   try {
-    const { name, price } = req.body;
-    const existingItem = await BillItem.findOne({ name });
-    
-    if (existingItem) {
-      existingItem.quantity += 1;
-      existingItem.total = existingItem.quantity * existingItem.price;
-      await existingItem.save();
-      res.json(existingItem);
-    } else {
-      const newItem = new BillItem({
-        name,
-        price,
-        quantity: 1,
-        total: price
-      });
-      await newItem.save();
-      res.status(201).json(newItem);
-    }
+    const { items, total } = req.body; // Ensure this matches your data structure
+    const newBill = new BillItem({
+      items, // Ensure this matches your BillItem model
+      total,
+      createdAt: new Date(),
+    });
+    await newBill.save();
+    res.status(201).json(newBill);
   } catch (error) {
+    console.error('Error saving bill:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -77,6 +69,20 @@ app.use('/api/customers', (req, res, next) => {
   console.log('Customer route hit:', req.method, req.url);
   next();
 }, customerRoutes);
+
+// Get the last bill item
+app.get('/api/last-bill', async (req, res) => {
+  console.log('Fetching last bill...'); // Log when this route is hit
+  try {
+    const lastBill = await BillItem.findOne().sort({ createdAt: -1 }); // Get the most recent bill
+    if (!lastBill) {
+      return res.status(404).json({ message: 'No bills found' });
+    }
+    res.json(lastBill);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // Add error handling middleware
 app.use((err, req, res, next) => {
@@ -98,4 +104,8 @@ app.listen(PORT, () => {
   console.log('- GET /api/customers');
   console.log('- PATCH /api/customers/:id');
   console.log('- DELETE /api/customers/:id');
+  console.log('- GET /api/bill-items');
+  console.log('- POST /api/bill-items');
+  console.log('- DELETE /api/bill-items');
+  console.log('- GET /api/last-bill'); // Log available routes
 }); 

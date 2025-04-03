@@ -13,6 +13,7 @@ interface BillItem {
   name: string;
   quantity: number;
   price: number;
+  total: number;
 }
 
 interface Menu {
@@ -46,6 +47,24 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
     setActiveMenuId(initialMenu.id);
   }, []);
 
+  // Fetch last bill details on component mount
+  useEffect(() => {
+    const fetchLastBill = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/last-bill');
+        if (!response.ok) {
+          throw new Error('Failed to fetch last bill');
+        }
+        const data = await response.json();
+        setLastBillDetails(data);
+      } catch (error) {
+        console.error('Error fetching last bill:', error);
+      }
+    };
+
+    fetchLastBill();
+  }, []);
+
   const handleAddCustomer = () => {
     navigate('/customer-details');
   };
@@ -68,7 +87,8 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
                   _id: Date.now().toString(),
                   name: item.name,
                   price: item.price,
-                  quantity: (menu.items.find(i => i.name === item.name)?.quantity || 0) + 1
+                  quantity: (menu.items.find(i => i.name === item.name)?.quantity || 0) + 1,
+                  total: item.price * ((menu.items.find(i => i.name === item.name)?.quantity || 0) + 1)
                 }
               ]
             }
@@ -125,23 +145,54 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
     }
   };
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (activeMenu) {
       const total = activeMenu.items.reduce((total, item) => total + (item.price * item.quantity), 0);
-      setLastBillDetails({
-        items: [...activeMenu.items],
+      
+      // Save the bill to the database
+      const billData = {
+        items: activeMenu.items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.price * item.quantity, // Calculate total for each item
+        })),
         total,
-        timestamp: new Date()
-      });
-      setShowLastBillPopup(true);
-      // Clear the current menu items
-      setMenus(prevMenus =>
-        prevMenus.map(menu =>
-          menu.id === activeMenu.id
-            ? { ...menu, items: [] }
-            : menu
-        )
-      );
+        createdAt: new Date(),
+      };
+
+      try {
+        const response = await fetch('http://localhost:5000/api/bill-items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(billData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save bill');
+        }
+
+        // Clear the current menu items
+        setMenus(prevMenus =>
+          prevMenus.map(menu =>
+            menu.id === activeMenu.id
+              ? { ...menu, items: [] }
+              : menu
+          )
+        );
+
+        // Save last bill details in state or context
+        setLastBillDetails({
+          items: activeMenu.items,
+          total,
+          timestamp: new Date(),
+        });
+
+      } catch (error) {
+        console.error('Error saving bill:', error);
+      }
     }
   };
 

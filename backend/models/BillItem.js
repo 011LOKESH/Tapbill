@@ -1,19 +1,29 @@
 const mongoose = require('mongoose');
 
 const billItemSchema = new mongoose.Schema({
-  name: {
+  _id: {
     type: String,
-    required: true
+    default: () => new mongoose.Types.ObjectId().toString(), // Generate a unique ID
   },
-  quantity: {
-    type: Number,
-    required: true,
-    default: 1
-  },
-  price: {
-    type: Number,
-    required: true
-  },
+  items: [{
+    name: {
+      type: String,
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      default: 1
+    },
+    price: {
+      type: Number,
+      required: true
+    },
+    total: {
+      type: Number,
+      required: true
+    }
+  }],
   total: {
     type: Number,
     required: true

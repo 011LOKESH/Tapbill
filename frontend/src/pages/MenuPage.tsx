@@ -6,11 +6,12 @@ const MenuPage: React.FC = () => {
   const [showSettingsOptions, setShowSettingsOptions] = useState(false); // State to manage dropdown visibility
 
   const handleOptionClick = (option: string) => {
-    console.log(`Selected option: ${option}`);
-    // You can navigate to different pages based on the option if needed
     if (option === 'Bill') {
       navigate('/'); // Navigate to the home page
+    } else if (option === 'Edit Bill') {
+      navigate('/edit-bill'); // Navigate to the EditBill page
     }
+    // Handle other options...
   };
 
   const toggleSettingsOptions = () => {
