@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Header from "@/components/layout/Header";
+import Header from "@/components/tapbill/Header";
 import CustomerSection from "@/components/tapbill/CustomerSection";
 import BillDisplay from "@/components/tapbill/BillDisplay";
 import MenuSection from "@/components/tapbill/MenuSection";

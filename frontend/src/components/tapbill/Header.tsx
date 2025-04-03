@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Header: React.FC = () => {
   const [currentDateTime, setCurrentDateTime] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -25,16 +27,14 @@ const Header: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const navigateToMenu = () => {
+    navigate('/menu'); // Navigate to the MenuPage
+  };
+
   return (
     <div className="flex w-full items-center justify-between px-10 py-2 border-[rgba(229,232,235,1)] border-b max-md:max-w-full max-md:px-5">
       <div className="flex items-center gap-4">
-        <div className="w-4">
-          <img
-            src="https://cdn.builder.io/api/v1/image/assets/736043f625c3417ea539d1ea386aa2a7/df42b29236c7f710bda12fac76ad5e622dcdf758?placeholderIfAbsent=true"
-            className="aspect-[1] object-contain w-4"
-            alt="TapBill logo"
-          />
-        </div>
+        <button onClick={navigateToMenu} className="text-lg">☰</button>
         <div className="text-lg text-[rgba(20,20,20,1)] font-bold whitespace-nowrap leading-none">
           TapBill
         </div>
