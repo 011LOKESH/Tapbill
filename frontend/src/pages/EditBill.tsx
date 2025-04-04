@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import BillDetailsModal from '@/components/tapbill/BillDetailsModal'; // Import the modal component
+import DateFilterModal from '@/components/tapbill/DateFilterModal'; // Import the date filter modal
 import { BillItem } from '@/services/api'; // Adjust the import based on your structure
 
 const EditBill: React.FC = () => {
   const navigate = useNavigate();
-  const [bills, setBills] = useState<{ _id: string; items: { name: string; price: number }[]; total: number }[]>([]); // Updated type
-  const [lastBill, setLastBill] = useState<BillItem | null>(null);
+  const [bills, setBills] = useState<any[]>([]); // Adjust type as needed
+  const [selectedBill, setSelectedBill] = useState<BillItem | null>(null); // State to hold the selected bill for details
+  const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+  const [isDateFilterOpen, setIsDateFilterOpen] = useState(false); // State for date filter modal
+  const [searchQuery, setSearchQuery] = useState(''); // State for search input
+  const [filteredBills, setFilteredBills] = useState<any[]>([]); // State for filtered bills
+  const [selectedBills, setSelectedBills] = useState<Set<string>>(new Set()); // State to track selected bills
 
   const navigateToMenu = () => {
     navigate('/menu'); // Navigate back to the MenuPage
@@ -14,12 +21,12 @@ const EditBill: React.FC = () => {
   useEffect(() => {
     const fetchBills = async () => {
       try {
-        const response = await fetch('/api/bill-items'); // Ensure this matches your backend route
+        const response = await fetch('http://localhost:5000/api/bill-items');
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error('Failed to fetch bills');
         }
         const data = await response.json();
-        setBills(data); // Assuming data is an array of bill objects
+        setBills(data);
       } catch (error) {
         console.error('Error fetching bills:', error);
       }
@@ -28,22 +35,92 @@ const EditBill: React.FC = () => {
     fetchBills();
   }, []);
 
-  useEffect(() => {
-    const fetchLastBill = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/api/last-bill');
-        if (!response.ok) {
-          throw new Error('Failed to fetch last bill');
-        }
-        const data = await response.json();
-        setLastBill(data);
-      } catch (error) {
-        console.error('Error fetching last bill:', error);
-      }
-    };
+  const handleViewDetails = (bill: BillItem) => {
+    setSelectedBill(bill);
+    setIsModalOpen(true); // Open the modal
+  };
 
-    fetchLastBill();
-  }, []); // Empty dependency array to run only on mount
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedBill(null); // Clear the selected bill
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    // Filter bills based on the search query
+    const filtered = bills.filter(bill => 
+      String(bill._id).includes(query) || bill.total.toString().includes(query)
+    );
+    setFilteredBills(filtered);
+  };
+
+  const handleOpenDateFilter = () => {
+    setIsDateFilterOpen(true);
+  };
+
+  const handleCloseDateFilter = () => {
+    setIsDateFilterOpen(false);
+  };
+
+  const handleDateFilter = (startDate: Date, endDate: Date) => {
+    const filtered = bills.filter(bill => {
+      const billDate = new Date(bill.createdAt);
+      return billDate >= startDate && billDate <= endDate;
+    });
+    setFilteredBills(filtered);
+  };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const allIds = new Set(bills.map(bill => bill._id));
+      setSelectedBills(allIds);
+    } else {
+      setSelectedBills(new Set());
+    }
+  };
+
+  const handleSelectBill = (id: string) => {
+    const newSelectedBills = new Set(selectedBills);
+    if (newSelectedBills.has(id)) {
+      newSelectedBills.delete(id);
+    } else {
+      newSelectedBills.add(id);
+    }
+    setSelectedBills(newSelectedBills);
+  };
+
+  const handlePrintSelected = () => {
+    // Logic to print selected bills
+    console.log("Print selected bills:", Array.from(selectedBills));
+  };
+
+  const handleDeleteSelected = async () => {
+    // Logic to delete selected bills
+    const deletePromises = Array.from(selectedBills).map(async (id) => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/bill-items/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          const errorMessage = await response.text(); // Get error message from response
+          throw new Error(`Failed to delete bill: ${errorMessage}`);
+        }
+      } catch (error) {
+        console.error('Error deleting bill:', error);
+      }
+    });
+
+    await Promise.all(deletePromises); // Wait for all delete requests to complete
+
+    // Update the bills state
+    const remainingBills = bills.filter(bill => !selectedBills.has(bill._id));
+    setBills(remainingBills); // Update the bills state
+    setFilteredBills(remainingBills); // Update the filtered bills state
+    setSelectedBills(new Set()); // Clear selected bills
+    console.log("Deleted selected bills:", Array.from(selectedBills));
+  };
 
   return (
     <div className="flex flex-col h-screen">
@@ -53,7 +130,7 @@ const EditBill: React.FC = () => {
           Edit Bill
         </div>
         <div className="flex gap-2">
-          <div className="bg-[rgba(56,224,120,1)] flex min-w-[84px] h-8 items-center justify-center px-4 rounded-[20px]">
+          <div className="bg-[rgb(56,224,120)] flex min-w-[84px] h-8 items-center justify-center px-4 rounded-[20px]">
             <div className="text-sm font-medium">
               Version 1.0
             </div>
@@ -66,36 +143,95 @@ const EditBill: React.FC = () => {
         </div>
       </div>
       <div className="flex h-full">
-        <div className="w-1/4 bg-gray-100 p-4">
-          <h2 className="text-lg font-bold">Today's</h2>
+        <div className="w-1/5 bg-gray-100 p-4"> {/* Adjusted width */}
+          <h2 className="text-lg font-bold">Today's Bills</h2>
           <ul className="mt-4">
             {bills.map((bill) => (
               <li key={bill._id} className="flex justify-between items-center py-2">
-                <span>{bill.items.map(item => item.name).join(', ')}</span> {/* Display item names */}
-                <span>₹{bill.total.toFixed(2)}</span>
-                <span className="text-green-500">✔️</span> {/* Symbol on the right */}
+                <div className="flex flex-col w-full">
+                  <span className="font-bold">{bill._id}</span> {/* Bold unique number */}
+                  <span>₹{bill.total.toFixed(2)}</span> {/* Net amount below */}
+                </div>
+                <div className="flex items-center">
+                  <button onClick={() => handleViewDetails(bill)} className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         </div>
-        <div className="flex-1 p-4 bg-transparent">
-          <h2 className="text-xl font-bold">Edit Your Bill</h2>
-          {/* Additional form or content for editing the bill can go here */}
-          {lastBill && (
-            <div>
-              <h2>Last Bill Details</h2>
-              <ul>
-                {lastBill.items.map(item => (
-                  <li key={item._id}>
-                    {item.name} - Quantity: {item.quantity} - Total: ₹{item.total}
-                  </li>
-                ))}
-              </ul>
-              <h3>Total Amount: ₹{lastBill.total}</h3>
+        <div className="flex-1 p-4 bg-transparent flex flex-col">
+          <div className="flex items-center mb-4">
+            <div className="relative w-1/2">
+              <input
+                type="text"
+                placeholder="Search by Bill ID or Amount"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="w-full bg-gray-200 border h-10 px-4 rounded-xl border-[rgba(224,224,224,1)] border-solid focus:outline-none focus:ring-2 focus:ring-[rgb(56,224,120)] focus:border-transparent text-sm"
+              />
+              <button onClick={handleOpenDateFilter} className="absolute right-0 top-0 h-10 px-4 rounded"> {/* Removed border class */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"></path>
+                </svg>
+              </button>
             </div>
+            <div className="flex ml-4 justify-end flex-1"> {/* Moved buttons to the right */}
+              <button onClick={handlePrintSelected} className="bg-[rgb(56,224,120)] text-white h-10 px-6 rounded-lg mr-2"> {/* Increased size and border radius */}
+                Print
+              </button>
+              <button onClick={handleDeleteSelected} className="bg-[#F5F5F5] text-black h-10 px-6 rounded-lg"> {/* Changed bg color */}
+                Delete
+              </button>
+            </div>
+          </div>
+          {filteredBills.length > 0 && (
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr>
+                  <th className="text-center">
+                    <input
+                      type="checkbox"
+                      onChange={handleSelectAll}
+                      checked={selectedBills.size === bills.length}
+                    />
+                  </th>
+                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Sr. No</th>
+                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Bill No</th>
+                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Date & Time</th>
+                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Payment Mode</th>
+                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Tax</th>
+                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Net Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBills.map((bill, index) => (
+                  <tr key={bill._id}>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedBills.has(bill._id)}
+                        onChange={() => handleSelectBill(bill._id)}
+                      />
+                    </td>
+                    <td className="border-b border-gray-200 px-4 py-2 text-center">{index + 1}</td>
+                    <td className="border-b border-gray-200 px-4 py-2 text-center">{bill._id}</td>
+                    <td className="border-b border-gray-200 px-4 py-2 text-center">{new Date(bill.createdAt).toLocaleString()}</td>
+                    <td className="border-b border-gray-200 px-4 py-2 text-center">Cash</td>
+                    <td className="border-b border-gray-200 px-4 py-2 text-center">₹{(bill.total * 0.1).toFixed(2)}</td>
+                    <td className="border-b border-gray-200 px-4 py-2 text-center">₹{bill.total.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
+      <BillDetailsModal isOpen={isModalOpen} onClose={closeModal} bill={selectedBill} />
+      <DateFilterModal isOpen={isDateFilterOpen} onClose={handleCloseDateFilter} onFilter={handleDateFilter} />
     </div>
   );
 };

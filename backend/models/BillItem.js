@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter'); // Import the Counter model
 
 const billItemSchema = new mongoose.Schema({
   _id: {
-    type: String,
-    default: () => new mongoose.Types.ObjectId().toString(), // Generate a unique ID
+    type: Number,
+    required: true,
   },
   items: [{
     name: {
@@ -32,6 +33,14 @@ const billItemSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Pre-save hook to set the _id
+billItemSchema.pre('save', async function(next) {
+  if (this.isNew) {
+    this._id = await Counter.getNextSequence();
+  }
+  next();
 });
 
 module.exports = mongoose.model('BillItem', billItemSchema); 
