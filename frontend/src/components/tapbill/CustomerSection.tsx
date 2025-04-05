@@ -9,7 +9,7 @@ interface CustomerSectionProps {
 }
 
 interface BillItem {
-  _id: string;
+  _id: number;
   name: string;
   quantity: number;
   price: number;
@@ -53,10 +53,16 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
       try {
         const response = await fetch('http://localhost:5000/api/last-bill');
         if (!response.ok) {
-          throw new Error('Failed to fetch last bill');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch last bill');
         }
         const data = await response.json();
-        setLastBillDetails(data);
+        console.log('Received last bill data:', data);
+        setLastBillDetails({
+          items: data.items,
+          total: data.total,
+          timestamp: new Date(data.timestamp)
+        });
       } catch (error) {
         console.error('Error fetching last bill:', error);
       }
@@ -84,7 +90,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
               items: [
                 ...menu.items.filter(i => i.name !== item.name),
                 {
-                  _id: Date.now().toString(),
+                  _id: Date.now(),
                   name: item.name,
                   price: item.price,
                   quantity: (menu.items.find(i => i.name === item.name)?.quantity || 0) + 1,
@@ -104,7 +110,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
           ? {
               ...menu,
               items: menu.items.map(item =>
-                item._id === itemId ? { ...item, quantity: Math.max(0, quantity) } : item
+                item._id.toString() === itemId ? { ...item, quantity: Math.max(0, quantity) } : item
               )
             }
           : menu
@@ -118,7 +124,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
         menu.id === menuId
           ? {
               ...menu,
-              items: menu.items.filter(item => item._id !== itemId)
+              items: menu.items.filter(item => item._id.toString() === itemId.toString())
             }
           : menu
       )
@@ -155,11 +161,13 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
           name: item.name,
           quantity: item.quantity,
           price: item.price,
-          total: item.price * item.quantity, // Calculate total for each item
+          total: item.price * item.quantity
         })),
         total,
-        createdAt: new Date(),
+        createdAt: new Date()
       };
+
+      console.log('Bill data to save:', billData);
 
       try {
         const response = await fetch('http://localhost:5000/api/bill-items', {
@@ -171,7 +179,8 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to save bill');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to save bill');
         }
 
         // Clear the current menu items

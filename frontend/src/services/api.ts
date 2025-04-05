@@ -1,7 +1,7 @@
 const API_URL = 'http://localhost:5000/api';
 
 export interface BillItem {
-  _id: string;
+  _id: number;
   name: string;
   quantity: number;
   price: number;
@@ -25,7 +25,7 @@ export const api = {
     return response.json();
   },
 
-  async updateBillItemQuantity(id: string, quantity: number): Promise<BillItem> {
+  async updateBillItemQuantity(id: number, quantity: number): Promise<BillItem> {
     const response = await fetch(`${API_URL}/bill-items/${id}`, {
       method: 'PATCH',
       headers: {
@@ -36,7 +36,7 @@ export const api = {
     return response.json();
   },
 
-  async deleteBillItem(id: string): Promise<void> {
+  async deleteBillItem(id: number): Promise<void> {
     await fetch(`${API_URL}/bill-items/${id}`, {
       method: 'DELETE',
     });

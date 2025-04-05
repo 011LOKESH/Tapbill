@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Counter = require('./Counter'); // Import the Counter model
+const Counter = require('./Counter');
 
 const billItemSchema = new mongoose.Schema({
   _id: {
@@ -35,12 +35,26 @@ const billItemSchema = new mongoose.Schema({
   }
 });
 
-// Pre-save hook to set the _id
-billItemSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    this._id = await Counter.getNextSequence();
+// Static method to create a new bill with auto-generated ID
+billItemSchema.statics.createBill = async function(billData) {
+  try {
+    // Get the next sequence number
+    const nextId = await Counter.getNextSequence();
+    console.log('Generated new ID:', nextId);
+
+    // Create and save the bill with the generated ID
+    const bill = new this({
+      _id: nextId,
+      ...billData
+    });
+
+    const savedBill = await bill.save();
+    console.log('Bill saved successfully with ID:', savedBill._id);
+    return savedBill;
+  } catch (error) {
+    console.error('Error in createBill:', error);
+    throw error;
   }
-  next();
-});
+};
 
 module.exports = mongoose.model('BillItem', billItemSchema); 

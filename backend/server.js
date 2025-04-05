@@ -2,8 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const BillItem = require('./models/BillItem');
 const customerRoutes = require('./routes/customers');
+const billItemRoutes = require('./routes/billItems');
+const BillItem = require('./models/BillItem');
+const Counter = require('./models/Counter');
 
 dotenv.config();
 
@@ -22,65 +24,46 @@ app.use((req, res, next) => {
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tapbill')
-  .then(() => console.log('Connected to MongoDB'))
+  .then(async () => {
+    console.log('Connected to MongoDB');
+    // Initialize the counter
+    await Counter.initialize();
+    console.log('Counter initialized');
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 // API Routes
-// Get all bill items
-app.get('/api/bill-items', async (req, res) => {
-  try {
-    const items = await BillItem.find().sort({ createdAt: -1 });
-    res.json(items);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Add new bill item
-app.post('/api/bill-items', async (req, res) => {
-  console.log('Received request to save bill:', req.body);
-  try {
-    const { items, total } = req.body; // Ensure this matches your data structure
-    const newBill = new BillItem({
-      items, // Ensure this matches your BillItem model
-      total,
-      createdAt: new Date(),
-    });
-    await newBill.save();
-    res.status(201).json(newBill);
-  } catch (error) {
-    console.error('Error saving bill:', error);
-    res.status(400).json({ message: error.message });
-  }
-});
-
-// Clear all bill items
-app.delete('/api/bill-items', async (req, res) => {
-  try {
-    await BillItem.deleteMany({});
-    res.json({ message: 'All items cleared' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Debug middleware for customer routes
-app.use('/api/customers', (req, res, next) => {
-  console.log('Customer route hit:', req.method, req.url);
-  next();
-}, customerRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/bill-items', billItemRoutes);
 
 // Get the last bill item
 app.get('/api/last-bill', async (req, res) => {
-  console.log('Fetching last bill...'); // Log when this route is hit
+  console.log('Fetching last bill...');
   try {
-    const lastBill = await BillItem.findOne().sort({ createdAt: -1 }); // Get the most recent bill
+    const lastBill = await BillItem.findOne().sort({ createdAt: -1 });
+    console.log('Last bill found:', lastBill);
+    
     if (!lastBill) {
+      console.log('No bills found in database');
       return res.status(404).json({ message: 'No bills found' });
     }
-    res.json(lastBill);
+    
+    // Ensure the response matches the expected format
+    const formattedBill = {
+      items: lastBill.items,
+      total: lastBill.total,
+      timestamp: lastBill.createdAt
+    };
+    
+    console.log('Sending formatted bill:', formattedBill);
+    res.json(formattedBill);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching last bill:', error);
+    res.status(500).json({ 
+      message: 'Error fetching last bill',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -107,5 +90,6 @@ app.listen(PORT, () => {
   console.log('- GET /api/bill-items');
   console.log('- POST /api/bill-items');
   console.log('- DELETE /api/bill-items');
-  console.log('- GET /api/last-bill'); // Log available routes
+  console.log('- DELETE /api/bill-items/:id');
+  console.log('- GET /api/last-bill');
 }); 
