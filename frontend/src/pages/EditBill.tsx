@@ -220,38 +220,44 @@ const EditBill: React.FC = () => {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2">
+                  <th className="px-4 py-2 text-center">
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
                       checked={selectedBills.size === filteredBills.length && filteredBills.length > 0}
+                      className="mx-auto"
                     />
                   </th>
-                  <th className="px-4 py-2 text-left">Bill No</th>
-                  <th className="px-4 py-2 text-left">Date & Time</th>
-                  <th className="px-4 py-2 text-left">Items</th>
-                  <th className="px-4 py-2 text-right">Total</th>
+                  <th className="px-4 py-2 text-center">Sr. No</th>
+                  <th className="px-4 py-2 text-center">Bill No</th>
+                  <th className="px-4 py-2 text-center">Date & Time</th>
+                  <th className="px-4 py-2 text-center">Payment Mode</th>
+                  <th className="px-4 py-2 text-center">Tax</th>
+                  <th className="px-4 py-2 text-center">Total</th>
                   <th className="px-4 py-2 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredBills.map((bill) => (
+                {filteredBills.map((bill, index) => (
                   <tr key={bill._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2 text-center">
                       <input
                         type="checkbox"
                         checked={selectedBills.has(bill._id)}
                         onChange={() => handleSelectBill(bill._id)}
+                        className="mx-auto"
                       />
                     </td>
-                    <td className="px-4 py-2">#{bill._id}</td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-2 text-center">{index + 1}</td>
+                    <td className="px-4 py-2 text-center">#{bill._id}</td>
+                    <td className="px-4 py-2 text-center">
                       {new Date(bill.createdAt).toLocaleString()}
                     </td>
-                    <td className="px-4 py-2">
-                      {bill.items.length} items
+                    <td className="px-4 py-2 text-center">Cash</td>
+                    <td className="px-4 py-2 text-center">
+                      ₹{(bill.total * 0.1).toFixed(2)}
                     </td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-2 text-center">
                       ₹{bill.total.toFixed(2)}
                     </td>
                     <td className="px-4 py-2 text-center">
