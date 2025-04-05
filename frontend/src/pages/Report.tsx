@@ -9,8 +9,31 @@ const Report: React.FC = () => {
   };
 
   const handleCategoryClick = (category: string) => {
-    // Handle category click navigation
-    console.log(`Clicked on ${category}`);
+    switch (category) {
+      case 'day-summary':
+        navigate('/day-wise-sales');
+        break;
+      case 'bill-sales':
+        // Handle bill sales navigation
+        break;
+      case 'deleted-items':
+        // Handle deleted items navigation
+        break;
+      case 'deleted-bill':
+        // Handle deleted bill navigation
+        break;
+      case 'day-sales':
+        // Handle day sales navigation
+        break;
+      case 'bill-sales-print':
+        // Handle bill sales print navigation
+        break;
+      case 'user-report':
+        // Handle user report navigation
+        break;
+      default:
+        console.log(`Clicked on ${category}`);
+    }
   };
 
   return (
