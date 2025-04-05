@@ -110,7 +110,13 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
           ? {
               ...menu,
               items: menu.items.map(item =>
-                item._id.toString() === itemId ? { ...item, quantity: Math.max(0, quantity) } : item
+                item._id.toString() === itemId.toString() 
+                  ? { 
+                      ...item, 
+                      quantity: Math.max(0, quantity),
+                      total: item.price * Math.max(0, quantity)
+                    } 
+                  : item
               )
             }
           : menu
@@ -124,7 +130,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
         menu.id === menuId
           ? {
               ...menu,
-              items: menu.items.filter(item => item._id.toString() === itemId.toString())
+              items: menu.items.filter(item => item._id.toString() !== itemId.toString())
             }
           : menu
       )
