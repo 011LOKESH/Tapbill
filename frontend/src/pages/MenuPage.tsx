@@ -10,6 +10,8 @@ const MenuPage: React.FC = () => {
       navigate('/'); // Navigate to the home page
     } else if (option === 'Edit Bill') {
       navigate('/edit-bill'); // Navigate to the EditBill page
+    } else if (option === 'Reports') {
+      navigate('/report');
     }
     // Handle other options...
   };

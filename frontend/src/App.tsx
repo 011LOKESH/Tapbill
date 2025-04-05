@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import CustomerDetails from "./pages/CustomerDetails";
 import MenuPage from "./pages/MenuPage";
 import EditBill from "./pages/EditBill";
+import Report from "./pages/Report";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/edit-bill" element={<EditBill />} />
           <Route path="/customer-details" element={<CustomerDetails />} />
+          <Route path="/report" element={<Report />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
