@@ -14,7 +14,7 @@ const Report: React.FC = () => {
         navigate('/day-wise-sales');
         break;
       case 'bill-sales':
-        // Handle bill sales navigation
+        navigate('/bill-wise-sales');
         break;
       case 'deleted-items':
         // Handle deleted items navigation
@@ -23,7 +23,7 @@ const Report: React.FC = () => {
         // Handle deleted bill navigation
         break;
       case 'day-sales':
-        // Handle day sales navigation
+        // Handle day sales print
         break;
       case 'bill-sales-print':
         // Handle bill sales print navigation

@@ -65,6 +65,10 @@ const DayWiseSales: React.FC = () => {
     navigate('/menu');
   };
 
+  const handleBack = () => {
+    navigate('/report');
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -124,7 +128,7 @@ const DayWiseSales: React.FC = () => {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="flex items-center justify-between px-10 py-2 border-b border-[rgba(229,232,235,1)]">
-        <button onClick={navigateToMenu} className="text-lg">☰</button>
+        <button onClick={handleBack} className="text-lg bg-[#F5F5F5] w-8 h-8 flex items-center justify-center rounded-lg">←</button>
         <div className="text-lg text-[rgba(20,20,20,1)] font-bold whitespace-nowrap leading-none">
           Day Wise Sales
         </div>

@@ -10,6 +10,7 @@ import MenuPage from "./pages/MenuPage";
 import EditBill from "./pages/EditBill";
 import Report from "./pages/Report";
 import DayWiseSales from "./pages/DayWiseSales";
+import BillWiseSales from "./pages/BillWiseSales";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/customer-details" element={<CustomerDetails />} />
           <Route path="/report" element={<Report />} />
           <Route path="/day-wise-sales" element={<DayWiseSales />} />
+          <Route path="/bill-wise-sales" element={<BillWiseSales />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
