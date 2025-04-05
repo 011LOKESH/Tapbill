@@ -27,6 +27,7 @@ const EditBill: React.FC = () => {
         }
         const data = await response.json();
         setBills(data);
+        setFilteredBills(data); // Initialize filtered bills with all bills
       } catch (error) {
         console.error('Error fetching bills:', error);
       }
@@ -34,6 +35,16 @@ const EditBill: React.FC = () => {
 
     fetchBills();
   }, []);
+
+  const getTodayBills = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return bills.filter(bill => {
+      const billDate = new Date(bill.createdAt);
+      billDate.setHours(0, 0, 0, 0);
+      return billDate.getTime() === today.getTime();
+    });
+  };
 
   const handleViewDetails = (bill: BillItem) => {
     setSelectedBill(bill);
@@ -51,7 +62,9 @@ const EditBill: React.FC = () => {
     
     // Filter bills based on the search query
     const filtered = bills.filter(bill => 
-      String(bill._id).includes(query) || bill.total.toString().includes(query)
+      String(bill._id).includes(query) || 
+      bill.total.toString().includes(query) ||
+      new Date(bill.createdAt).toLocaleDateString().includes(query)
     );
     setFilteredBills(filtered);
   };
@@ -74,7 +87,7 @@ const EditBill: React.FC = () => {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      const allIds = new Set(bills.map(bill => bill._id));
+      const allIds = new Set(filteredBills.map(bill => bill._id));
       setSelectedBills(allIds);
     } else {
       setSelectedBills(new Set());
@@ -142,92 +155,118 @@ const EditBill: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="flex h-full">
-        <div className="w-1/5 bg-gray-100 p-4"> {/* Adjusted width */}
-          <h2 className="text-lg font-bold">Today's Bills</h2>
-          <ul className="mt-4">
-            {bills.map((bill) => (
-              <li key={bill._id} className="flex justify-between items-center py-2">
-                <div className="flex flex-col w-full">
-                  <span className="font-bold">{bill._id}</span> {/* Bold unique number */}
-                  <span>₹{bill.total.toFixed(2)}</span> {/* Net amount below */}
-                </div>
-                <div className="flex items-center">
-                  <button onClick={() => handleViewDetails(bill)} className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
+      <div className="flex flex-1 overflow-hidden">
+        <div className="w-1/5 bg-gray-100 p-4 overflow-y-auto">
+          <h2 className="text-lg font-bold mb-4">Today's Bills</h2>
+          <ul className="space-y-2">
+            {getTodayBills().map((bill) => (
+              <li key={bill._id} className="bg-white p-3 rounded-lg shadow-sm">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-bold">Bill #{bill._id}</div>
+                    <div className="text-sm text-gray-600">
+                      {new Date(bill.createdAt).toLocaleTimeString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold">₹{bill.total.toFixed(2)}</div>
+                    <button 
+                      onClick={() => handleViewDetails(bill)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      View
+                    </button>
+                  </div>
                 </div>
               </li>
             ))}
           </ul>
         </div>
-        <div className="flex-1 p-4 bg-transparent flex flex-col">
+        <div className="flex-1 p-4 overflow-y-auto">
           <div className="flex items-center mb-4">
             <div className="relative w-1/2">
               <input
                 type="text"
-                placeholder="Search by Bill ID or Amount"
+                placeholder="Search by Bill ID, Amount, or Date"
                 value={searchQuery}
                 onChange={handleSearchChange}
                 className="w-full bg-gray-200 border h-10 px-4 rounded-xl border-[rgba(224,224,224,1)] border-solid focus:outline-none focus:ring-2 focus:ring-[rgb(56,224,120)] focus:border-transparent text-sm"
               />
-              <button onClick={handleOpenDateFilter} className="absolute right-0 top-0 h-10 px-4 rounded"> {/* Removed border class */}
+              <button 
+                onClick={handleOpenDateFilter} 
+                className="absolute right-0 top-0 h-10 px-4 rounded"
+              >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"></path>
                 </svg>
               </button>
             </div>
             <div className="flex ml-4 justify-end flex-1"> {/* Moved buttons to the right */}
-              <button onClick={handlePrintSelected} className="bg-[rgb(56,224,120)] text-white h-10 px-6 rounded-lg mr-2"> {/* Increased size and border radius */}
+              <button 
+                onClick={handlePrintSelected} 
+                className="bg-[rgb(56,224,120)] text-white h-10 px-6 rounded-lg mr-2"
+              >
                 Print
               </button>
-              <button onClick={handleDeleteSelected} className="bg-[#F5F5F5] text-black h-10 px-6 rounded-lg"> {/* Changed bg color */}
+              <button 
+                onClick={handleDeleteSelected} 
+                className="bg-[#F5F5F5] text-black h-10 px-6 rounded-lg"
+              >
                 Delete
               </button>
             </div>
           </div>
-          {filteredBills.length > 0 && (
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-center">
+                  <th className="px-4 py-2">
                     <input
                       type="checkbox"
                       onChange={handleSelectAll}
-                      checked={selectedBills.size === bills.length}
+                      checked={selectedBills.size === filteredBills.length && filteredBills.length > 0}
                     />
                   </th>
-                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Sr. No</th>
-                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Bill No</th>
-                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Date & Time</th>
-                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Payment Mode</th>
-                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Tax</th>
-                  <th className="border-b-2 border-gray-300 px-4 py-2 text-center">Net Amount</th>
+                  <th className="px-4 py-2 text-left">Bill No</th>
+                  <th className="px-4 py-2 text-left">Date & Time</th>
+                  <th className="px-4 py-2 text-left">Items</th>
+                  <th className="px-4 py-2 text-right">Total</th>
+                  <th className="px-4 py-2 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredBills.map((bill, index) => (
-                  <tr key={bill._id}>
-                    <td className="text-center">
+              <tbody className="divide-y divide-gray-200">
+                {filteredBills.map((bill) => (
+                  <tr key={bill._id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2">
                       <input
                         type="checkbox"
                         checked={selectedBills.has(bill._id)}
                         onChange={() => handleSelectBill(bill._id)}
                       />
                     </td>
-                    <td className="border-b border-gray-200 px-4 py-2 text-center">{index + 1}</td>
-                    <td className="border-b border-gray-200 px-4 py-2 text-center">{bill._id}</td>
-                    <td className="border-b border-gray-200 px-4 py-2 text-center">{new Date(bill.createdAt).toLocaleString()}</td>
-                    <td className="border-b border-gray-200 px-4 py-2 text-center">Cash</td>
-                    <td className="border-b border-gray-200 px-4 py-2 text-center">₹{(bill.total * 0.1).toFixed(2)}</td>
-                    <td className="border-b border-gray-200 px-4 py-2 text-center">₹{bill.total.toFixed(2)}</td>
+                    <td className="px-4 py-2">#{bill._id}</td>
+                    <td className="px-4 py-2">
+                      {new Date(bill.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2">
+                      {bill.items.length} items
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      ₹{bill.total.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <button
+                        onClick={() => handleViewDetails(bill)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
+          </div>
         </div>
       </div>
       <BillDetailsModal isOpen={isModalOpen} onClose={closeModal} bill={selectedBill} />
