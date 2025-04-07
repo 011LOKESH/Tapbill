@@ -6,7 +6,7 @@ const deletedBillSchema = new mongoose.Schema({
     required: true,
   },
   billNo: {
-    type: String,
+    type: Number,
     required: true
   },
   items: [{

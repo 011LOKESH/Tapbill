@@ -64,7 +64,7 @@ router.delete('/:id', async (req, res) => {
       // Create a new deleted bill document
       const deletedBill = new DeletedBill({
         _id: bill._id,
-        billNo: bill._id.toString(), // Convert the number to string
+        billNo: bill._id, // Keep it as a number
         items: bill.items,
         total: bill.total,
         createdAt: bill.createdAt,

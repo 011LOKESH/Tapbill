@@ -48,7 +48,7 @@ const DeletedBills: React.FC = () => {
       
       const formattedBills: DeletedBillData[] = data.map((bill: any) => ({
         id: bill._id,
-        billNo: bill.billNo,
+        billNo: `#${bill.billNo}`,
         dateTime: bill.createdAt,
         paymentMode: bill.paymentMode || 'Cash',
         tax: bill.total * 0.1,
