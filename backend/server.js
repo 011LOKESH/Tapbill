@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const customerRoutes = require('./routes/customers');
 const billItemRoutes = require('./routes/billItems');
 const deletedBillRoutes = require('./routes/deletedBills');
+const menuItemRoutes = require('./routes/menuItems');
 const BillItem = require('./models/BillItem');
 const Counter = require('./models/Counter');
 
@@ -37,6 +38,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tapbill')
 app.use('/api/customers', customerRoutes);
 app.use('/api/bill-items', billItemRoutes);
 app.use('/api/deleted-bills', deletedBillRoutes);
+app.use('/api/menu-items', menuItemRoutes);
 
 // Get the last bill item
 app.get('/api/last-bill', async (req, res) => {

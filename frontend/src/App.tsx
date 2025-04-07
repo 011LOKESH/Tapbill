@@ -13,6 +13,7 @@ import DayWiseSales from "./pages/DayWiseSales";
 import BillWiseSales from "./pages/BillWiseSales";
 import DeletedBills from "./pages/DeletedBills";
 import DeletedBillDetails from './pages/DeletedBillDetails';
+import CustomizeMenu from './pages/CustomizeMenu';
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/bill-wise-sales" element={<BillWiseSales />} />
           <Route path="/deleted-bills" element={<DeletedBills />} />
           <Route path="/deleted-bill-details/:id" element={<DeletedBillDetails />} />
+          <Route path="/customize-menu" element={<CustomizeMenu />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

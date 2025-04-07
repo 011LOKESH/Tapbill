@@ -79,7 +79,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
     setCustomerName(e.target.value);
   };
 
-  const handleItemClick = (item: { name: string; price: number }) => {
+  const handleItemClick = (name: string, price: number) => {
     if (!activeMenuId) return;
     
     setMenus(prevMenus =>
@@ -88,13 +88,13 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
           ? {
               ...menu,
               items: [
-                ...menu.items.filter(i => i.name !== item.name),
+                ...menu.items.filter(i => i.name !== name),
                 {
                   _id: Date.now(),
-                  name: item.name,
-                  price: item.price,
-                  quantity: (menu.items.find(i => i.name === item.name)?.quantity || 0) + 1,
-                  total: item.price * ((menu.items.find(i => i.name === item.name)?.quantity || 0) + 1)
+                  name,
+                  price,
+                  quantity: (menu.items.find(i => i.name === name)?.quantity || 0) + 1,
+                  total: price * ((menu.items.find(i => i.name === name)?.quantity || 0) + 1)
                 }
               ]
             }
@@ -103,28 +103,30 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
     );
   };
 
-  const handleUpdateQuantity = (menuId: string, itemId: string, quantity: number) => {
+  const handleUpdateQuantity = (menuId: string, itemId: number | string, quantity: number) => {
+    if (quantity < 0) return;
+    
     setMenus(prevMenus =>
       prevMenus.map(menu =>
         menu.id === menuId
           ? {
               ...menu,
               items: menu.items.map(item =>
-                item._id.toString() === itemId.toString() 
+                item._id.toString() === itemId.toString()
                   ? { 
                       ...item, 
-                      quantity: Math.max(0, quantity),
-                      total: item.price * Math.max(0, quantity)
+                      quantity,
+                      total: item.price * quantity
                     } 
                   : item
-              )
+              ).filter(item => item.quantity > 0)
             }
           : menu
       )
     );
   };
 
-  const handleDeleteItem = (menuId: string, itemId: string) => {
+  const handleDeleteItem = (menuId: string, itemId: number | string) => {
     setMenus(prevMenus =>
       prevMenus.map(menu =>
         menu.id === menuId

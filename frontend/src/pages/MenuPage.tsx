@@ -12,6 +12,8 @@ const MenuPage: React.FC = () => {
       navigate('/edit-bill'); // Navigate to the EditBill page
     } else if (option === 'Reports') {
       navigate('/report');
+    } else if (option === 'Customize Menu') {
+      navigate('/customize-menu');
     }
     // Handle other options...
   };
