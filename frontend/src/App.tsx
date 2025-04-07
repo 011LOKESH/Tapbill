@@ -11,6 +11,8 @@ import EditBill from "./pages/EditBill";
 import Report from "./pages/Report";
 import DayWiseSales from "./pages/DayWiseSales";
 import BillWiseSales from "./pages/BillWiseSales";
+import DeletedBills from "./pages/DeletedBills";
+import DeletedBillDetails from './pages/DeletedBillDetails';
 
 const queryClient = new QueryClient();
 
@@ -24,10 +26,13 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/edit-bill" element={<EditBill />} />
+          <Route path="/edit-bill/:id" element={<EditBill />} />
           <Route path="/customer-details" element={<CustomerDetails />} />
           <Route path="/report" element={<Report />} />
           <Route path="/day-wise-sales" element={<DayWiseSales />} />
           <Route path="/bill-wise-sales" element={<BillWiseSales />} />
+          <Route path="/deleted-bills" element={<DeletedBills />} />
+          <Route path="/deleted-bill-details/:id" element={<DeletedBillDetails />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

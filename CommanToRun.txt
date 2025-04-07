@@ -1,8 +1,10 @@
+cd Tapbill
 cd backend
 npm install
 npm start
 
 
+cd Tapbill
 cd frontend
 npm install
 npm install axios

@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const customerRoutes = require('./routes/customers');
 const billItemRoutes = require('./routes/billItems');
+const deletedBillRoutes = require('./routes/deletedBills');
 const BillItem = require('./models/BillItem');
 const Counter = require('./models/Counter');
 
@@ -35,6 +36,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tapbill')
 // API Routes
 app.use('/api/customers', customerRoutes);
 app.use('/api/bill-items', billItemRoutes);
+app.use('/api/deleted-bills', deletedBillRoutes);
 
 // Get the last bill item
 app.get('/api/last-bill', async (req, res) => {

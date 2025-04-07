@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const BillItem = require('../models/BillItem');
+const DeletedBill = require('../models/DeletedBill');
 
 // Get all bill items
 router.get('/', async (req, res) => {
@@ -60,12 +61,28 @@ router.delete('/:id', async (req, res) => {
   try {
     const bill = await BillItem.findById(req.params.id);
     if (bill) {
+      // Create a new deleted bill document
+      const deletedBill = new DeletedBill({
+        _id: bill._id,
+        billNo: bill._id.toString(), // Convert the number to string
+        items: bill.items,
+        total: bill.total,
+        createdAt: bill.createdAt,
+        paymentMode: bill.paymentMode || 'Cash'
+      });
+
+      // Save the deleted bill
+      await deletedBill.save();
+
+      // Delete the original bill
       await bill.deleteOne();
-      res.json({ message: 'Bill deleted' });
+      
+      res.json({ message: 'Bill moved to deleted bills' });
     } else {
       res.status(404).json({ message: 'Bill not found' });
     }
   } catch (error) {
+    console.error('Error in soft delete:', error);
     res.status(500).json({ message: error.message });
   }
 });

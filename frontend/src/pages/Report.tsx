@@ -20,7 +20,7 @@ const Report: React.FC = () => {
         // Handle deleted items navigation
         break;
       case 'deleted-bill':
-        // Handle deleted bill navigation
+        navigate('/deleted-bills');
         break;
       case 'day-sales':
         // Handle day sales print
