@@ -2,10 +2,23 @@ const express = require('express');
 const router = express.Router();
 const MenuItem = require('../models/MenuItem');
 
-// Get all menu items
-router.get('/', async (req, res) => {
+// Get all menu items (including unavailable ones)
+router.get('/all', async (req, res) => {
+  console.log('GET /api/menu-items/all route hit');
   try {
     const menuItems = await MenuItem.find().sort({ category: 1, name: 1 });
+    console.log(`Found ${menuItems.length} menu items`);
+    res.json(menuItems);
+  } catch (error) {
+    console.error('Error in /all route:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get available menu items only
+router.get('/', async (req, res) => {
+  try {
+    const menuItems = await MenuItem.find({ isAvailable: true }).sort({ category: 1, name: 1 });
     res.json(menuItems);
   } catch (error) {
     res.status(500).json({ message: error.message });
