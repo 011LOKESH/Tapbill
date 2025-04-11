@@ -1,0 +1,27 @@
+cd Tapbill
+cd backend
+npm install
+npm start
+
+
+cd Tapbill
+cd frontend
+npm install
+npm install axios
+npm run dev
+
+cd Tapbill
+cd backend
+node seedMenuData.js
+
+npm install react-router-dom
+
+
+git init
+git add .
+git commit -m "message"
+git push --force origin main
+
+git remote add origin https://github.com/011LOKESH/Tapbill.git
+git branch -M main
+git push -u origin main
