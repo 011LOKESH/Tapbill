@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
@@ -28,9 +28,28 @@ const ExportAndDelete: React.FC = () => {
     endTime: '23:59'
   });
   const [storageInfo, setStorageInfo] = useState({
-    used: 75,
-    free: 25,
+    used: 0,
+    free: 100,
+    totalSizeMB: 0,
+    totalSizeKB: 0,
+    storageLimit: 100
   });
+
+  // Fetch storage information on component mount
+  useEffect(() => {
+    const fetchStorageInfo = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/export/storageInfo');
+        if (!response.ok) throw new Error('Failed to fetch storage info');
+        const data = await response.json();
+        setStorageInfo(data);
+      } catch (error) {
+        console.error('Error fetching storage info:', error);
+      }
+    };
+
+    fetchStorageInfo();
+  }, []);
 
   const dataItems: DataItem[] = [
     {
@@ -342,18 +361,25 @@ const ExportAndDelete: React.FC = () => {
         </div>
       </div>
 
-      {/* Storage Info */}
-      <div className="bg-white rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Storage Usage</h2>
-        <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[rgb(56,224,120)]"
-            style={{ width: `${storageInfo.used}%` }}
-          />
-        </div>
-        <div className="flex justify-between mt-2 text-sm">
-          <span>Used: {storageInfo.used}%</span>
-          <span>Free: {storageInfo.free}%</span>
+      {/* Storage Information Section */}
+      <div className="mt-8 p-4 bg-white rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4">Database Storage</h2>
+        <div className="space-y-4">
+          <div>
+            <div className="flex justify-between mb-2">
+              <span className="text-sm font-medium">Used Space</span>
+              <span className="text-sm">{storageInfo.used}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${storageInfo.used}%` }}
+              ></div>
+            </div>
+          </div>
+          <div className="text-sm text-gray-600">
+            <p>Total Used: {storageInfo.totalSizeMB} MB ({storageInfo.totalSizeKB} KB) / {storageInfo.storageLimit} MB</p>
+          </div>
         </div>
       </div>
 

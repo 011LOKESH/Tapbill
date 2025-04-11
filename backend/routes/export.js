@@ -3,6 +3,7 @@ const router = express.Router();
 const BillItem = require('../models/BillItem');
 const DeletedBill = require('../models/DeletedBill');
 const MenuItem = require('../models/MenuItem');
+const mongoose = require('mongoose');
 
 // Helper function to format data for Excel
 const formatDataForExcel = (data) => {
@@ -189,6 +190,35 @@ router.post('/deletedBill', async (req, res) => {
   } catch (error) {
     console.error('Error exporting deleted bills:', error);
     res.status(500).json({ error: 'Failed to export deleted bills' });
+  }
+});
+
+// Get database storage information
+router.get('/storageInfo', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const stats = await db.stats();
+    
+    // Calculate storage in bytes first
+    const totalSizeBytes = stats.dataSize;
+    
+    // Convert to KB and MB with precision
+    const totalSizeKB = Math.round(totalSizeBytes / 1024);
+    const totalSizeMB = (totalSizeBytes / (1024 * 1024)).toFixed(2);
+    const storageLimit = 100; // MB
+    
+    const storageInfo = {
+      used: Math.round((totalSizeMB / storageLimit) * 100),
+      free: Math.round(100 - (totalSizeMB / storageLimit) * 100),
+      totalSizeMB: parseFloat(totalSizeMB),
+      totalSizeKB: totalSizeKB,
+      storageLimit: storageLimit
+    };
+
+    res.json(storageInfo);
+  } catch (error) {
+    console.error('Error fetching storage info:', error);
+    res.status(500).json({ error: 'Failed to fetch storage information' });
   }
 });
 
