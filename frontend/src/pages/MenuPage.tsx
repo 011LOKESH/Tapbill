@@ -14,8 +14,11 @@ const MenuPage: React.FC = () => {
       navigate('/report');
     } else if (option === 'Customize Menu') {
       navigate('/customize-menu');
+<<<<<<< HEAD
     } else if (option === 'Export & Delete') {
       navigate('/export-and-delete');
+=======
+>>>>>>> 9d342797ea0070b4c44e755054df366becbdb4bc
     }
     // Handle other options...
   };
@@ -62,7 +65,11 @@ const MenuPage: React.FC = () => {
             {showSettingsOptions && (
               <div className="ml-4">
                 <li onClick={() => handleOptionClick('Customize Menu')} className="cursor-pointer font-bold">🛠️ Customize Menu</li>
+<<<<<<< HEAD
                 <li onClick={() => handleOptionClick('Export & Delete')} className="cursor-pointer font-bold">📤 Export & Delete</li>
+=======
+                <li onClick={() => handleOptionClick('Export & Delete')} className="cursor-pointer font-bold">📤 Delete & Export</li>
+>>>>>>> 9d342797ea0070b4c44e755054df366becbdb4bc
               </div>
             )}
             <li onClick={() => handleOptionClick('Day Summary')} className="cursor-pointer font-bold">📅 Day Summary</li>
