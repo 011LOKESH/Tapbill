@@ -8,6 +8,7 @@ const deletedBillRoutes = require('./routes/deletedBills');
 const menuItemRoutes = require('./routes/menuItems');
 const BillItem = require('./models/BillItem');
 const Counter = require('./models/Counter');
+const exportRoutes = require('./routes/export');
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/bill-items', billItemRoutes);
 app.use('/api/deleted-bills', deletedBillRoutes);
 app.use('/api/menu-items', menuItemRoutes);
+app.use('/api/export', exportRoutes);
 
 // Get the last bill item
 app.get('/api/last-bill', async (req, res) => {

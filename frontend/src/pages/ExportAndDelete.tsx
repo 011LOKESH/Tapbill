@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 
 interface DataItem {
   id: string;
@@ -9,14 +10,26 @@ interface DataItem {
   description: string;
 }
 
+interface DateRange {
+  startDate: string;
+  startTime: string;
+  endDate: string;
+  endTime: string;
+}
+
 const ExportAndDelete: React.FC = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<'today' | 'yesterday' | 'custom'>('today');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [customDate, setCustomDate] = useState<string>('');
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: '',
+    startTime: '00:00',
+    endDate: '',
+    endTime: '23:59'
+  });
   const [storageInfo, setStorageInfo] = useState({
-    used: 75, // Example value in percentage
-    free: 25, // Example value in percentage
+    used: 75,
+    free: 25,
   });
 
   const dataItems: DataItem[] = [
@@ -48,7 +61,6 @@ const ExportAndDelete: React.FC = () => {
 
   const handleDateChange = (date: 'today' | 'yesterday' | 'custom') => {
     setSelectedDate(date);
-    // Reset selected items when changing date
     setSelectedItems([]);
   };
 
@@ -69,13 +81,114 @@ const ExportAndDelete: React.FC = () => {
     }
   };
 
+  const handleDateRangeChange = (field: keyof DateRange, value: string) => {
+    setDateRange(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const fetchExportData = async () => {
+    const data: Record<string, any[]> = {};
+    
+    for (const itemId of selectedItems) {
+      try {
+        // Map the itemId to the correct endpoint
+        const endpointMap: Record<string, string> = {
+          'daySummary': '/api/export/daySummary',
+          'billSales': '/api/export/billSales',
+          'deletedItems': '/api/export/deletedItems',
+          'deletedBill': '/api/export/deletedBill'
+        };
+
+        const endpoint = endpointMap[itemId];
+        if (!endpoint) {
+          console.warn(`No endpoint found for ${itemId}`);
+          continue;
+        }
+
+        const response = await fetch(`http://localhost:5000${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            dateRange: selectedDate === 'custom' ? dateRange : undefined,
+            dateType: selectedDate
+          })
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch data');
+        
+        const responseData = await response.json();
+        if (Array.isArray(responseData) && responseData.length > 0) {
+          data[itemId] = responseData;
+        } else {
+          console.warn(`No data found for ${itemId}`);
+          data[itemId] = [];
+        }
+      } catch (error) {
+        console.error(`Error fetching data for ${itemId}:`, error);
+        data[itemId] = [];
+      }
+    }
+    
+    return data;
+  };
+
   const handleExport = async () => {
     if (selectedItems.length === 0) {
       alert('Please select at least one item to export');
       return;
     }
-    // TODO: Implement export functionality
-    console.log('Exporting items:', selectedItems);
+
+    try {
+      // Fetch data based on selected items and date range
+      const exportData = await fetchExportData();
+      
+      // Create Excel workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Add each selected item's data as a separate sheet
+      selectedItems.forEach(itemId => {
+        const item = dataItems.find(i => i.id === itemId);
+        if (item && exportData[itemId] && exportData[itemId].length > 0) {
+          // Convert data to worksheet
+          const ws = XLSX.utils.json_to_sheet(exportData[itemId]);
+          
+          // Set column widths based on content
+          const maxWidths: Record<string, number> = {};
+          exportData[itemId].forEach(row => {
+            Object.entries(row).forEach(([key, value]) => {
+              const length = String(value).length;
+              maxWidths[key] = Math.max(maxWidths[key] || 0, length);
+            });
+          });
+          
+          ws['!cols'] = Object.values(maxWidths).map(width => ({
+            wch: Math.min(Math.max(width, 10), 50) // Min width 10, max width 50
+          }));
+          
+          // Add worksheet to workbook
+          XLSX.utils.book_append_sheet(wb, ws, item.title);
+        }
+      });
+
+      // Check if any data was added to the workbook
+      if (wb.SheetNames.length === 0) {
+        alert('No data available to export for the selected items and date range');
+        return;
+      }
+
+      // Generate Excel file
+      const fileName = `export_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      alert('Export completed successfully!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
   };
 
   const handleDelete = async () => {
@@ -88,9 +201,9 @@ const ExportAndDelete: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between px-10 py-2 border-b border-[rgba(229,232,235,1)]">
+      <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => navigate(-1)}
           className="text-lg bg-[#F5F5F5] w-8 h-8 flex items-center justify-center rounded-lg"
@@ -112,9 +225,9 @@ const ExportAndDelete: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        {/* Date Selection */}
+      {/* Date Selection */}
+      <div className="bg-white rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4">Select Date Range</h2>
         <div className="flex gap-4 mb-6">
           <button
             onClick={() => handleDateChange('today')}
@@ -146,85 +259,118 @@ const ExportAndDelete: React.FC = () => {
           >
             Date Custom
           </button>
-          {selectedDate === 'custom' && (
-            <input
-              type="date"
-              value={customDate}
-              onChange={(e) => setCustomDate(e.target.value)}
-              className="px-4 py-2 rounded-lg border border-gray-200"
-            />
-          )}
         </div>
 
-        {/* Data Items */}
-        <div className="bg-white rounded-xl p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Select Data to Export/Delete</h2>
-            <button
-              onClick={handleSelectAll}
-              className="text-sm text-[rgb(56,224,120)] hover:underline"
-            >
-              {selectedItems.length === dataItems.length ? 'Deselect All' : 'Select All'}
-            </button>
+        {selectedDate === 'custom' && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+              <input
+                type="time"
+                value={dateRange.startTime}
+                onChange={(e) => handleDateRangeChange('startTime', e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+              <input
+                type="time"
+                value={dateRange.endTime}
+                onChange={(e) => handleDateRangeChange('endTime', e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-gray-200"
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {dataItems.map((item) => (
-              <div
-                key={item.id}
-                className={`p-4 rounded-lg border ${
-                  selectedItems.includes(item.id)
-                    ? 'border-[rgb(56,224,120)] bg-[rgba(56,224,120,0.1)]'
-                    : 'border-gray-200'
-                }`}
-                onClick={() => handleItemSelect(item.id)}
-              >
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedItems.includes(item.id)}
-                    onChange={() => handleItemSelect(item.id)}
-                    className="mt-1"
-                  />
-                  <div>
-                    <h3 className="font-medium">{item.title}</h3>
-                    <p className="text-sm text-gray-500">{item.description}</p>
-                  </div>
+        )}
+      </div>
+
+      {/* Data Items */}
+      <div className="bg-white rounded-lg p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Select Data to Export/Delete</h2>
+          <button
+            onClick={handleSelectAll}
+            className="text-sm text-[rgb(56,224,120)] hover:underline"
+          >
+            {selectedItems.length === dataItems.length ? 'Deselect All' : 'Select All'}
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {dataItems.map((item) => (
+            <div
+              key={item.id}
+              className={`p-4 rounded-lg border cursor-pointer ${
+                selectedItems.includes(item.id)
+                  ? 'border-[rgb(56,224,120)] bg-[rgba(56,224,120,0.1)]'
+                  : 'border-gray-200'
+              }`}
+              onClick={() => handleItemSelect(item.id)}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={selectedItems.includes(item.id)}
+                  onChange={() => handleItemSelect(item.id)}
+                  className="mt-1"
+                />
+                <div>
+                  <h3 className="font-medium">{item.title}</h3>
+                  <p className="text-sm text-gray-500">{item.description}</p>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Storage Info */}
-        <div className="bg-white rounded-xl p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Storage Usage</h2>
-          <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[rgb(56,224,120)]"
-              style={{ width: `${storageInfo.used}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-2 text-sm">
-            <span>Used: {storageInfo.used}%</span>
-            <span>Free: {storageInfo.free}%</span>
-          </div>
+      {/* Storage Info */}
+      <div className="bg-white rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4">Storage Usage</h2>
+        <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[rgb(56,224,120)]"
+            style={{ width: `${storageInfo.used}%` }}
+          />
         </div>
+        <div className="flex justify-between mt-2 text-sm">
+          <span>Used: {storageInfo.used}%</span>
+          <span>Free: {storageInfo.free}%</span>
+        </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-4">
-          <button
-            onClick={handleExport}
-            className="px-6 py-2 bg-[rgb(56,224,120)] text-white rounded-lg hover:bg-[rgb(46,204,110)]"
-          >
-            Export
-          </button>
-          <button
-            onClick={handleDelete}
-            className="px-6 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-          >
-            Delete
-          </button>
-        </div>
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-4">
+        <button
+          onClick={handleExport}
+          className="px-6 py-2 bg-[rgb(56,224,120)] text-white rounded-lg hover:bg-[rgb(46,204,110)]"
+        >
+          Export
+        </button>
+        <button
+          onClick={handleDelete}
+          className="px-6 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+        >
+          Delete
+        </button>
       </div>
     </div>
   );

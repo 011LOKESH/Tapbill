@@ -8,6 +8,7 @@ cd Tapbill
 cd frontend
 npm install
 npm install axios
+npm install xlsx @types/xlsx
 npm run dev
 
 cd Tapbill
