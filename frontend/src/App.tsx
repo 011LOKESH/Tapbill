@@ -14,7 +14,10 @@ import BillWiseSales from "./pages/BillWiseSales";
 import DeletedBills from "./pages/DeletedBills";
 import DeletedBillDetails from './pages/DeletedBillDetails';
 import CustomizeMenu from './pages/CustomizeMenu';
+<<<<<<< HEAD
 import ExportAndDelete from './pages/ExportAndDelete';
+=======
+>>>>>>> 9d342797ea0070b4c44e755054df366becbdb4bc
 
 const queryClient = new QueryClient();
 
@@ -36,7 +39,10 @@ const App = () => (
           <Route path="/deleted-bills" element={<DeletedBills />} />
           <Route path="/deleted-bill-details/:id" element={<DeletedBillDetails />} />
           <Route path="/customize-menu" element={<CustomizeMenu />} />
+<<<<<<< HEAD
           <Route path="/export-and-delete" element={<ExportAndDelete />} />
+=======
+>>>>>>> 9d342797ea0070b4c44e755054df366becbdb4bc
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
