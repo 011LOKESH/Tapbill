@@ -197,21 +197,27 @@ router.post('/deletedBill', async (req, res) => {
 router.get('/storageInfo', async (req, res) => {
   try {
     const db = mongoose.connection.db;
-    const stats = await db.stats();
     
-    // Calculate storage in bytes first
-    const totalSizeBytes = stats.dataSize;
+    // Get all collections
+    const collections = await db.listCollections().toArray();
+    let totalStorageBytes = 0;
+
+    // Calculate total storage from all collections
+    for (const collection of collections) {
+      const stats = await db.collection(collection.name).stats();
+      totalStorageBytes += stats.storageSize || 0;
+    }
     
     // Convert to KB and MB with precision
-    const totalSizeKB = Math.round(totalSizeBytes / 1024);
-    const totalSizeMB = (totalSizeBytes / (1024 * 1024)).toFixed(2);
+    const totalSizeKB = totalStorageBytes / 1024;
+    const totalSizeMB = totalSizeKB / 1024;
     const storageLimit = 100; // MB
     
     const storageInfo = {
       used: Math.round((totalSizeMB / storageLimit) * 100),
       free: Math.round(100 - (totalSizeMB / storageLimit) * 100),
-      totalSizeMB: parseFloat(totalSizeMB),
-      totalSizeKB: totalSizeKB,
+      totalSizeMB: parseFloat(totalSizeMB.toFixed(2)),
+      totalSizeKB: parseFloat(totalSizeKB.toFixed(2)),
       storageLimit: storageLimit
     };
 

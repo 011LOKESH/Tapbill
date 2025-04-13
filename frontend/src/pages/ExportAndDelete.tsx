@@ -362,7 +362,7 @@ const ExportAndDelete: React.FC = () => {
       </div>
 
       {/* Storage Information Section */}
-      <div className="mt-8 p-4 bg-white rounded-lg shadow">
+      <div className="mt-8 mb-8 p-4 bg-white rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">Database Storage</h2>
         <div className="space-y-4">
           <div>
@@ -378,7 +378,7 @@ const ExportAndDelete: React.FC = () => {
             </div>
           </div>
           <div className="text-sm text-gray-600">
-            <p>Total Used: {storageInfo.totalSizeMB} MB ({storageInfo.totalSizeKB} KB) / {storageInfo.storageLimit} MB</p>
+            <p>Total Used: {storageInfo.totalSizeMB} MB ({storageInfo.totalSizeKB.toFixed(2)} KB) / {storageInfo.storageLimit} MB</p>
           </div>
         </div>
       </div>
