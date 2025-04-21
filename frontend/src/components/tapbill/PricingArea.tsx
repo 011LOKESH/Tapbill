@@ -25,18 +25,18 @@ const PricingArea: React.FC<PricingAreaProps> = ({
 
   return (
     <div className="w-full bg-white border border-gray-200 rounded-xl p-4">
-      <div className="grid grid-cols-5 gap-4 mb-4 font-bold text-gray-700">
+      <div className="grid grid-cols-[2fr,1fr,1fr,1fr,0.5fr] gap-4 mb-4 font-bold text-gray-700">
         <div>Item</div>
-        <div>Qty</div>
-        <div>Price</div>
-        <div>Total</div>
+        <div className="text-center">Qty</div>
+        <div className="text-center">Price</div>
+        <div className="text-center">Total</div>
         <div></div>
       </div>
       <div className="space-y-2">
         {items.map((item) => (
-          <div key={item._id} className="grid grid-cols-5 gap-4 py-2 border-b border-gray-100 items-center">
-            <div className="font-medium">{item.name}</div>
-            <div className="flex items-center space-x-2">
+          <div key={item._id} className="grid grid-cols-[2fr,1fr,1fr,1fr,0.5fr] gap-4 py-2 border-b border-gray-100 items-center">
+            <div className="font-medium truncate pr-2">{item.name}</div>
+            <div className="flex items-center justify-center space-x-2">
               <button
                 onClick={() => onUpdateQuantity(item._id, item.quantity - 1)}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-700 w-6 h-6 rounded-full flex items-center justify-center"
@@ -51,9 +51,9 @@ const PricingArea: React.FC<PricingAreaProps> = ({
                 +
               </button>
             </div>
-            <div>₹{item.price.toFixed(2)}</div>
-            <div>₹{(item.price * item.quantity).toFixed(2)}</div>
-            <div>
+            <div className="text-center">₹{item.price.toFixed(2)}</div>
+            <div className="text-center">₹{(item.price * item.quantity).toFixed(2)}</div>
+            <div className="flex justify-center">
               <button
                 onClick={() => onDeleteItem(item._id)}
                 className="text-red-500 hover:text-red-700"
@@ -64,11 +64,10 @@ const PricingArea: React.FC<PricingAreaProps> = ({
           </div>
         ))}
       </div>
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex justify-between font-bold text-lg">
-          <div>Net Total:</div>
-          <div>₹{calculateTotal().toFixed(2)}</div>
-        </div>
+      
+      <div className="flex justify-between font-bold text-lg mt-4">
+        <div>Net Total:</div>
+        <div>₹{calculateTotal().toFixed(2)}</div>
       </div>
     </div>
   );
