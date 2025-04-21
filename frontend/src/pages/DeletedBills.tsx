@@ -150,8 +150,38 @@ const DeletedBills: React.FC = () => {
     console.log('Printing selected bills:', Array.from(selectedBills));
   };
 
-  const handleExport = () => {
-    console.log('Exporting selected bills:', Array.from(selectedBills));
+  const handleExport = async () => {
+    try {
+      const selectedBillsData = filteredBills.filter(bill => selectedBills.has(bill.id));
+      const response = await fetch('http://localhost:5000/api/export/deletedBills', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bills: selectedBillsData,
+          type: dateFilter,
+          startDate: customDateRange.startDate,
+          endDate: customDateRange.endDate
+        }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `deleted_bills_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Failed to export deleted bills');
+      }
+    } catch (error) {
+      console.error('Error exporting deleted bills:', error);
+    }
   };
 
   const handleViewBill = (billId: string) => {

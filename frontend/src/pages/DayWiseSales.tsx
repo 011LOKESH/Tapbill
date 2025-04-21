@@ -120,8 +120,38 @@ const DayWiseSales: React.FC = () => {
     console.log('Printing selected sales:', Array.from(selectedSales));
   };
 
-  const handleExport = () => {
-    console.log('Exporting selected sales:', Array.from(selectedSales));
+  const handleExport = async () => {
+    try {
+      const selectedSalesData = filteredSales.filter(sale => selectedSales.has(sale.id));
+      const response = await fetch('http://localhost:5000/api/export/daySummary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sales: selectedSalesData,
+          type: 'custom',
+          startDate: selectedSalesData[0]?.date,
+          endDate: selectedSalesData[selectedSalesData.length - 1]?.date
+        }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `day_wise_sales_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Failed to export sales data');
+      }
+    } catch (error) {
+      console.error('Error exporting sales:', error);
+    }
   };
 
   return (

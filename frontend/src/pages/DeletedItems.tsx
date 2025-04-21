@@ -134,9 +134,38 @@ const DeletedItems: React.FC = () => {
     }
   };
 
-  const handleExport = () => {
-    // Implement export functionality
-    console.log('Exporting selected items:', Array.from(selectedItems));
+  const handleExport = async () => {
+    try {
+      const selectedItemsData = filteredItems.filter(item => selectedItems.has(item._id));
+      const response = await fetch('http://localhost:5000/api/export/deletedItems', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: selectedItemsData,
+          type: dateFilter,
+          startDate: customDateRange.startDate,
+          endDate: customDateRange.endDate
+        }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `deleted_items_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Failed to export deleted items');
+      }
+    } catch (error) {
+      console.error('Error exporting deleted items:', error);
+    }
   };
 
   // Pagination

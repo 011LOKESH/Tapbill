@@ -4,6 +4,7 @@ const BillItem = require('../models/BillItem');
 const DeletedBill = require('../models/DeletedBill');
 const MenuItem = require('../models/MenuItem');
 const mongoose = require('mongoose');
+const ExcelJS = require('exceljs');
 
 // Helper function to format data for Excel
 const formatDataForExcel = (data) => {
@@ -114,40 +115,48 @@ router.post('/billSales', async (req, res) => {
 // Export deleted items
 router.post('/deletedItems', async (req, res) => {
   try {
-    const { dateRange, dateType } = req.body;
-    let query = {};
+    const { items, type, startDate, endDate } = req.body;
 
-    if (dateType === 'custom' && dateRange) {
-      const startDate = new Date(`${dateRange.startDate}T${dateRange.startTime}`);
-      const endDate = new Date(`${dateRange.endDate}T${dateRange.endTime}`);
-      query.deletedAt = { $gte: startDate, $lte: endDate };
-    } else if (dateType === 'today') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      query.deletedAt = { $gte: today, $lt: tomorrow };
-    } else if (dateType === 'yesterday') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      query.deletedAt = { $gte: yesterday, $lt: today };
-    }
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Deleted Items');
 
-    const deletedItems = await MenuItem.find({ isDeleted: true, ...query });
-    const formattedItems = deletedItems.map(item => ({
-      'Item Name': item.name,
-      'Category': item.category,
-      'Price': item.price,
-      'Deleted At': item.deletedAt,
-      'Reason': item.deletionReason || 'Not specified'
-    }));
+    // Add headers
+    worksheet.columns = [
+      { header: 'Item Name', key: 'name', width: 30 },
+      { header: 'Category', key: 'category', width: 20 },
+      { header: 'Price', key: 'price', width: 15 },
+      { header: 'Deleted At', key: 'deletedAt', width: 20 }
+    ];
 
-    res.json(formattedItems);
+    // Add data
+    items.forEach(item => {
+      worksheet.addRow({
+        name: item.name,
+        category: item.category,
+        price: item.price,
+        deletedAt: new Date(item.deletedAt).toLocaleString()
+      });
+    });
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+
+    // Generate Excel file
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Send response
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=deleted_items_${new Date().toISOString().split('T')[0]}.xlsx`);
+    res.send(buffer);
   } catch (error) {
     console.error('Error exporting deleted items:', error);
-    res.status(500).json({ error: 'Failed to export deleted items' });
+    res.status(500).json({ message: 'Error exporting deleted items' });
   }
 });
 
