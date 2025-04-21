@@ -11,6 +11,8 @@ interface MenuItem {
   price: number;
   isVeg: boolean;
   isAvailable: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 const CustomizeMenu: React.FC = () => {
@@ -76,6 +78,7 @@ const CustomizeMenu: React.FC = () => {
           name: `${categoryName} Default Item`,
           price: 0,
           isVeg: true,
+          isDeleted: false
         }),
       });
       
@@ -97,6 +100,7 @@ const CustomizeMenu: React.FC = () => {
         body: JSON.stringify({
           ...dishData,
           isAvailable: true,
+          isDeleted: false
         }),
       });
       
@@ -145,7 +149,9 @@ const CustomizeMenu: React.FC = () => {
       });
       
       if (response.ok) {
-        fetchMenuItems();
+        // Update local state to remove the item
+        setMenuItems(prevItems => prevItems.filter(item => item._id !== itemId));
+        setFilteredItems(prevItems => prevItems.filter(item => item._id !== itemId));
       }
     } catch (error) {
       console.error('Error deleting item:', error);

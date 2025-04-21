@@ -15,6 +15,7 @@ import DeletedBills from "./pages/DeletedBills";
 import DeletedBillDetails from './pages/DeletedBillDetails';
 import CustomizeMenu from './pages/CustomizeMenu';
 import ExportAndDelete from './pages/ExportAndDelete';
+import DeletedItems from './pages/DeletedItems';
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/deleted-bill-details/:id" element={<DeletedBillDetails />} />
           <Route path="/customize-menu" element={<CustomizeMenu />} />
           <Route path="/export-and-delete" element={<ExportAndDelete />} />
+          <Route path="/deleted-items" element={<DeletedItems />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

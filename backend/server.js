@@ -33,7 +33,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tapbill')
     await Counter.initialize();
     console.log('Counter initialized');
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    console.error('Connection URI:', process.env.MONGODB_URI || 'mongodb://localhost:27017/tapbill');
+    console.error('Please ensure MongoDB is running and accessible at the specified URI');
+  });
 
 // API Routes
 app.use('/api/customers', customerRoutes);

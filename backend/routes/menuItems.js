@@ -6,7 +6,7 @@ const MenuItem = require('../models/MenuItem');
 router.get('/all', async (req, res) => {
   console.log('GET /api/menu-items/all route hit');
   try {
-    const menuItems = await MenuItem.find().sort({ category: 1, name: 1 });
+    const menuItems = await MenuItem.find({ isDeleted: false }).sort({ category: 1, name: 1 });
     console.log(`Found ${menuItems.length} menu items`);
     res.json(menuItems);
   } catch (error) {
@@ -18,9 +18,43 @@ router.get('/all', async (req, res) => {
 // Get available menu items only
 router.get('/', async (req, res) => {
   try {
-    const menuItems = await MenuItem.find({ isAvailable: true }).sort({ category: 1, name: 1 });
+    const menuItems = await MenuItem.find({ isAvailable: true, isDeleted: false }).sort({ category: 1, name: 1 });
     res.json(menuItems);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get deleted items
+router.get('/deleted', async (req, res) => {
+  console.log('GET /api/menu-items/deleted route hit');
+  console.log('Query params:', req.query);
+  try {
+    const { dateFilter, startDate, endDate } = req.query;
+    let query = { isDeleted: true };
+
+    if (dateFilter === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      query.deletedAt = { $gte: today, $lt: tomorrow };
+    } else if (dateFilter === 'yesterday') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      query.deletedAt = { $gte: yesterday, $lt: today };
+    } else if (dateFilter === 'custom' && startDate && endDate) {
+      query.deletedAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+
+    console.log('MongoDB query:', query);
+    const deletedItems = await MenuItem.find(query).sort({ deletedAt: -1 });
+    console.log(`Found ${deletedItems.length} deleted items`);
+    res.json(deletedItems);
+  } catch (error) {
+    console.error('Error in /deleted route:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -32,7 +66,8 @@ router.post('/', async (req, res) => {
     name: req.body.name,
     price: req.body.price,
     isVeg: req.body.isVeg,
-    isAvailable: true
+    isAvailable: true,
+    isDeleted: false
   });
 
   try {
@@ -80,7 +115,7 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// Delete menu item
+// Soft delete menu item
 router.delete('/:id', async (req, res) => {
   try {
     const menuItem = await MenuItem.findById(req.params.id);
@@ -88,8 +123,29 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Menu item not found' });
     }
 
-    await menuItem.deleteOne();
-    res.json({ message: 'Menu item deleted' });
+    menuItem.isDeleted = true;
+    menuItem.deletedAt = new Date();
+    await menuItem.save();
+    
+    res.json({ message: 'Menu item soft deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Restore deleted item
+router.patch('/:id/restore', async (req, res) => {
+  try {
+    const menuItem = await MenuItem.findById(req.params.id);
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    menuItem.isDeleted = false;
+    menuItem.deletedAt = undefined;
+    await menuItem.save();
+    
+    res.json({ message: 'Menu item restored' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

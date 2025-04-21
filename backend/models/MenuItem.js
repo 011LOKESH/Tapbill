@@ -22,6 +22,13 @@ const menuItemSchema = new mongoose.Schema({
     type: Boolean,
     required: true,
     default: true
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date
   }
 }, {
   timestamps: true
