@@ -12,4 +12,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Clear all deleted bills
+router.delete('/clear', async (req, res) => {
+  try {
+    const result = await DeletedBill.deleteMany({});
+    res.json({ 
+      message: `${result.deletedCount} deleted bills cleared`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error clearing deleted bills:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router; 

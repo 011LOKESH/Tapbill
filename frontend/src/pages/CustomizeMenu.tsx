@@ -15,6 +15,11 @@ interface MenuItem {
   deletedAt?: string;
 }
 
+const getAuthHeaders = () => {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 const CustomizeMenu: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,7 +51,9 @@ const CustomizeMenu: React.FC = () => {
   const fetchMenuItems = async () => {
     try {
       // Fetch all menu items including unavailable ones
-      const response = await fetch("http://localhost:5000/api/menu-items/all");
+      const response = await fetch("http://localhost:5000/api/menu-items/all", {
+        headers: getAuthHeaders(),
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -72,6 +79,7 @@ const CustomizeMenu: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           category: categoryName,
@@ -96,6 +104,7 @@ const CustomizeMenu: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           ...dishData,
@@ -121,6 +130,7 @@ const CustomizeMenu: React.FC = () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           isAvailable: !item.isAvailable
@@ -146,6 +156,7 @@ const CustomizeMenu: React.FC = () => {
     try {
       const response = await fetch(`http://localhost:5000/api/menu-items/${itemId}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
       });
       
       if (response.ok) {
@@ -169,6 +180,7 @@ const CustomizeMenu: React.FC = () => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         body: JSON.stringify(updatedItem),
       });

@@ -6,9 +6,11 @@ const customerRoutes = require('./routes/customers');
 const billItemRoutes = require('./routes/billItems');
 const deletedBillRoutes = require('./routes/deletedBills');
 const menuItemRoutes = require('./routes/menuItems');
+const authRoutes = require('./routes/auth');
 const BillItem = require('./models/BillItem');
 const Counter = require('./models/Counter');
 const exportRoutes = require('./routes/export');
+const jwt = require('jsonwebtoken');
 
 dotenv.config();
 
@@ -39,15 +41,34 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tapbill')
     console.error('Please ensure MongoDB is running and accessible at the specified URI');
   });
 
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+};
+
 // API Routes
-app.use('/api/customers', customerRoutes);
-app.use('/api/bill-items', billItemRoutes);
-app.use('/api/deleted-bills', deletedBillRoutes);
-app.use('/api/menu-items', menuItemRoutes);
-app.use('/api/export', exportRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/customers', authenticateToken, customerRoutes);
+app.use('/api/bill-items', authenticateToken, billItemRoutes);
+app.use('/api/deleted-bills', authenticateToken, deletedBillRoutes);
+app.use('/api/menu-items', authenticateToken, menuItemRoutes);
+app.use('/api/export', authenticateToken, exportRoutes);
 
 // Get the last bill item
-app.get('/api/last-bill', async (req, res) => {
+app.get('/api/last-bill', authenticateToken, async (req, res) => {
   console.log('Fetching last bill...');
   try {
     const lastBill = await BillItem.findOne().sort({ createdAt: -1 });
@@ -93,6 +114,8 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log('Available routes:');
+  console.log('- POST /api/auth/login');
+  console.log('- POST /api/auth/register');
   console.log('- POST /api/customers');
   console.log('- GET /api/customers');
   console.log('- PATCH /api/customers/:id');

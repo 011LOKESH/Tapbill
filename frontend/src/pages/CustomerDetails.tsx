@@ -9,6 +9,11 @@ interface Customer {
   createdAt: string;
 }
 
+const getAuthHeaders = () => {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 const CustomerDetails: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,7 +29,9 @@ const CustomerDetails: React.FC = () => {
 
   const fetchCustomers = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/customers');
+      const response = await axios.get('http://localhost:5000/api/customers', {
+        headers: getAuthHeaders(),
+      });
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
@@ -39,7 +46,9 @@ const CustomerDetails: React.FC = () => {
     if (newCustomer.name && newCustomer.contact) {
       try {
         console.log('Saving customer:', newCustomer);
-        const response = await axios.post('http://localhost:5000/api/customers', newCustomer);
+        const response = await axios.post('http://localhost:5000/api/customers', newCustomer, {
+          headers: getAuthHeaders(),
+        });
         console.log('Save response:', response.data);
         setNewCustomer({ name: "", contact: "" });
         fetchCustomers();
@@ -62,7 +71,9 @@ const CustomerDetails: React.FC = () => {
   const handleUpdate = async () => {
     if (editingCustomer) {
       try {
-        await axios.patch(`http://localhost:5000/api/customers/${editingCustomer._id}`, editingCustomer);
+        await axios.patch(`http://localhost:5000/api/customers/${editingCustomer._id}`, editingCustomer, {
+          headers: getAuthHeaders(),
+        });
         setShowEditModal(false);
         setEditingCustomer(null);
         fetchCustomers();
@@ -75,7 +86,9 @@ const CustomerDetails: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this customer?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/customers/${id}`);
+        await axios.delete(`http://localhost:5000/api/customers/${id}`, {
+          headers: getAuthHeaders(),
+        });
         fetchCustomers();
       } catch (error) {
         console.error('Error deleting customer:', error);

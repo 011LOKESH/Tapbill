@@ -97,4 +97,57 @@ router.delete('/', async (req, res) => {
   }
 });
 
+// Delete bills by date range
+router.delete('/deleteByDateRange', async (req, res) => {
+  try {
+    const { dateRange, dateType } = req.body;
+    let query = {};
+
+    if (dateType === 'custom' && dateRange) {
+      const startDate = new Date(`${dateRange.startDate}T${dateRange.startTime}`);
+      const endDate = new Date(`${dateRange.endDate}T${dateRange.endTime}`);
+      query.createdAt = { $gte: startDate, $lte: endDate };
+    } else if (dateType === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      query.createdAt = { $gte: today, $lt: tomorrow };
+    } else if (dateType === 'yesterday') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      query.createdAt = { $gte: yesterday, $lt: today };
+    }
+
+    // Find bills to delete
+    const billsToDelete = await BillItem.find(query);
+    
+    // Move bills to deleted bills collection
+    for (const bill of billsToDelete) {
+      const deletedBill = new DeletedBill({
+        _id: bill._id,
+        billNo: bill._id,
+        items: bill.items,
+        total: bill.total,
+        createdAt: bill.createdAt,
+        paymentMode: bill.paymentMode || 'Cash'
+      });
+      await deletedBill.save();
+    }
+
+    // Delete the original bills
+    const result = await BillItem.deleteMany(query);
+    
+    res.json({ 
+      message: `${result.deletedCount} bills moved to deleted bills`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting bills by date range:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

@@ -1,6 +1,7 @@
 cd Tapbill
 cd backend
 npm install
+npm install exceljs
 npm start
 
 

@@ -5,6 +5,7 @@ const DeletedBill = require('../models/DeletedBill');
 const MenuItem = require('../models/MenuItem');
 const mongoose = require('mongoose');
 const ExcelJS = require('exceljs');
+const { format } = require('date-fns');
 
 // Helper function to format data for Excel
 const formatDataForExcel = (data) => {
@@ -33,41 +34,92 @@ const formatDataForExcel = (data) => {
 // Export day summary
 router.post('/daySummary', async (req, res) => {
   try {
-    const { dateRange, dateType } = req.body;
-    let query = {};
+    const { sales, type, startDate, endDate } = req.body;
+    
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Tapbill';
+    workbook.lastModifiedBy = 'Tapbill';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    
+    const worksheet = workbook.addWorksheet('Day Wise Sales');
 
-    if (dateType === 'custom' && dateRange) {
-      const startDate = new Date(`${dateRange.startDate}T${dateRange.startTime}`);
-      const endDate = new Date(`${dateRange.endDate}T${dateRange.endTime}`);
-      query.createdAt = { $gte: startDate, $lte: endDate };
-    } else if (dateType === 'today') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      query.createdAt = { $gte: today, $lt: tomorrow };
-    } else if (dateType === 'yesterday') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      query.createdAt = { $gte: yesterday, $lt: today };
-    }
+    // Add headers with styling
+    worksheet.columns = [
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Number of Bills', key: 'numberOfBills', width: 15 },
+      { header: 'Tax', key: 'tax', width: 15, style: { numFmt: '₹#,##0.00' } },
+      { header: 'Total Sales', key: 'totalSale', width: 15, style: { numFmt: '₹#,##0.00' } }
+    ];
 
-    const bills = await BillItem.find(query);
-    const summary = bills.map(bill => ({
-      'Bill No': bill.billNo,
-      'Date': bill.createdAt,
-      'Total Amount': bill.total,
-      'Payment Mode': bill.paymentMode,
-      'Items Count': bill.items.length,
-      'Tax': bill.total * 0.1
-    }));
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true, size: 12 };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
 
-    res.json(summary);
+    // Add data rows
+    sales.forEach(sale => {
+      worksheet.addRow({
+        date: format(new Date(sale.date), 'yyyy-MM-dd'),
+        numberOfBills: sale.numberOfBills,
+        tax: sale.tax,
+        totalSale: sale.totalSale
+      });
+    });
+
+    // Add total row
+    const totalRow = worksheet.addRow({
+      date: 'Total',
+      numberOfBills: sales.reduce((sum, sale) => sum + sale.numberOfBills, 0),
+      tax: sales.reduce((sum, sale) => sum + sale.tax, 0),
+      totalSale: sales.reduce((sum, sale) => sum + sale.totalSale, 0)
+    });
+
+    // Style the total row
+    totalRow.font = { bold: true };
+    totalRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+
+    // Auto-fit columns
+    worksheet.columns.forEach(column => {
+      column.width = Math.min(
+        Math.max(
+          column.width || 10,
+          ...worksheet.getColumn(column.key).values
+            .filter(value => value)
+            .map(value => value.toString().length)
+        ),
+        50 // Maximum width
+      );
+    });
+
+    // Generate Excel file
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=day_wise_sales_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    
+    // Send the file
+    return res.send(buffer);
+
   } catch (error) {
     console.error('Error exporting day summary:', error);
-    res.status(500).json({ error: 'Failed to export day summary' });
+    // Ensure we haven't sent headers yet
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        success: false,
+        message: 'Error generating export file',
+        error: error.message 
+      });
+    }
   }
 });
 
@@ -97,7 +149,7 @@ router.post('/billSales', async (req, res) => {
 
     const bills = await BillItem.find(query);
     const sales = bills.map(bill => ({
-      'Bill No': bill.billNo,
+      'Bill No': bill._id,
       'Date': bill.createdAt,
       'Total Amount': bill.total,
       'Payment Mode': bill.paymentMode,
@@ -117,88 +169,178 @@ router.post('/deletedItems', async (req, res) => {
   try {
     const { items, type, startDate, endDate } = req.body;
 
+    // Early validation of input
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'No items provided for export' 
+      });
+    }
+
     // Create a new workbook
     const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Tapbill';
+    workbook.lastModifiedBy = 'Tapbill';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    
     const worksheet = workbook.addWorksheet('Deleted Items');
 
-    // Add headers
+    // Add headers with styling
     worksheet.columns = [
       { header: 'Item Name', key: 'name', width: 30 },
       { header: 'Category', key: 'category', width: 20 },
-      { header: 'Price', key: 'price', width: 15 },
-      { header: 'Deleted At', key: 'deletedAt', width: 20 }
+      { header: 'Price', key: 'price', width: 15, style: { numFmt: '₹#,##0.00' } },
+      { header: 'Deleted At', key: 'deletedAt', width: 25 }
     ];
 
-    // Add data
-    items.forEach(item => {
-      worksheet.addRow({
-        name: item.name,
-        category: item.category,
-        price: item.price,
-        deletedAt: new Date(item.deletedAt).toLocaleString()
-      });
-    });
-
     // Style the header row
-    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).font = { bold: true, size: 12 };
     worksheet.getRow(1).fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FFD3D3D3' }
     };
 
+    // Add data with validation
+    let rowsAdded = 0;
+    items.forEach(item => {
+      if (item && item.name && item.category && item.price !== undefined && item.deletedAt) {
+        try {
+          const deletedDate = new Date(item.deletedAt);
+          if (isNaN(deletedDate.getTime())) {
+            console.warn(`Invalid date for item ${item.name}: ${item.deletedAt}`);
+            return; // Skip this item
+          }
+
+          worksheet.addRow({
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            deletedAt: format(deletedDate, 'yyyy-MM-dd HH:mm:ss')
+          });
+          rowsAdded++;
+        } catch (err) {
+          console.warn(`Error processing item ${item.name}:`, err);
+          // Continue with next item
+        }
+      }
+    });
+
+    // Check if any valid rows were added
+    if (rowsAdded === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'No valid items to export' 
+      });
+    }
+
+    // Auto-fit columns
+    worksheet.columns.forEach(column => {
+      column.width = Math.min(
+        Math.max(
+          column.width || 10,
+          ...worksheet.getColumn(column.key).values
+            .filter(value => value)
+            .map(value => value.toString().length)
+        ),
+        50 // Maximum width
+      );
+    });
+
     // Generate Excel file
     const buffer = await workbook.xlsx.writeBuffer();
 
-    // Send response
+    // Set response headers
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=deleted_items_${new Date().toISOString().split('T')[0]}.xlsx`);
-    res.send(buffer);
+    res.setHeader('Content-Disposition', `attachment; filename=deleted_items_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    
+    // Send the file
+    return res.send(buffer);
+
   } catch (error) {
     console.error('Error exporting deleted items:', error);
-    res.status(500).json({ message: 'Error exporting deleted items' });
+    // Ensure we haven't sent headers yet
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        success: false,
+        message: 'Error generating export file',
+        error: error.message 
+      });
+    }
   }
 });
 
 // Export deleted bills
-router.post('/deletedBill', async (req, res) => {
+router.post('/deletedBills', async (req, res) => {
   try {
-    const { dateRange, dateType } = req.body;
-    let query = {};
+    const { bills, type, startDate, endDate } = req.body;
 
-    if (dateType === 'custom' && dateRange) {
-      const startDate = new Date(`${dateRange.startDate}T${dateRange.startTime}`);
-      const endDate = new Date(`${dateRange.endDate}T${dateRange.endTime}`);
-      query.deletedAt = { $gte: startDate, $lte: endDate };
-    } else if (dateType === 'today') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      query.deletedAt = { $gte: today, $lt: tomorrow };
-    } else if (dateType === 'yesterday') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      query.deletedAt = { $gte: yesterday, $lt: today };
+    if (!bills || !Array.isArray(bills) || bills.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'No bills provided for export' 
+      });
     }
 
-    const deletedBills = await DeletedBill.find(query);
-    const formattedBills = deletedBills.map(bill => ({
-      'Bill No': bill.billNo,
-      'Original Date': bill.createdAt,
-      'Deleted At': bill.deletedAt,
-      'Total Amount': bill.total,
-      'Payment Mode': bill.paymentMode,
-      'Items': bill.items.map(item => item.name).join(', '),
-      'Tax': bill.total * 0.1
-    }));
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Deleted Bills');
 
-    res.json(formattedBills);
+    worksheet.columns = [
+      { header: 'Bill No', key: 'billNo', width: 15 },
+      { header: 'Date & Time', key: 'dateTime', width: 25 },
+      { header: 'Payment Mode', key: 'paymentMode', width: 20 },
+      { header: 'Quantity', key: 'qty', width: 10 },
+      { header: 'Net Amount', key: 'netAmount', width: 15, style: { numFmt: '₹#,##0.00' } },
+      { header: 'Deleted At', key: 'deletedAt', width: 25 }
+    ];
+
+    worksheet.getRow(1).font = { bold: true, size: 12 };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD3D3D3' }
+    };
+
+    bills.forEach(bill => {
+      worksheet.addRow({
+        billNo: bill.billNo,
+        dateTime: format(new Date(bill.dateTime), 'yyyy-MM-dd HH:mm:ss'),
+        paymentMode: bill.paymentMode,
+        qty: bill.qty,
+        netAmount: bill.netAmount,
+        deletedAt: format(new Date(bill.deletedAt), 'yyyy-MM-dd HH:mm:ss')
+      });
+    });
+
+    worksheet.columns.forEach(column => {
+      column.width = Math.min(
+        Math.max(
+          column.width || 10,
+          ...worksheet.getColumn(column.key).values
+            .filter(value => value)
+            .map(value => value.toString().length)
+        ),
+        50
+      );
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=deleted_bills_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    
+    return res.send(buffer);
+
   } catch (error) {
     console.error('Error exporting deleted bills:', error);
-    res.status(500).json({ error: 'Failed to export deleted bills' });
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        success: false,
+        message: 'Error generating export file',
+        error: error.message 
+      });
+    }
   }
 });
 
@@ -213,8 +355,15 @@ router.get('/storageInfo', async (req, res) => {
 
     // Calculate total storage from all collections
     for (const collection of collections) {
-      const stats = await db.collection(collection.name).stats();
-      totalStorageBytes += stats.storageSize || 0;
+      try {
+        const stats = await db.collection(collection.name).stats();
+        totalStorageBytes += stats.storageSize || 0;
+      } catch (error) {
+        console.warn(`Could not get stats for collection ${collection.name}:`, error);
+        // If we can't get stats, estimate based on document count
+        const count = await db.collection(collection.name).countDocuments();
+        totalStorageBytes += count * 1024; // Estimate 1KB per document
+      }
     }
     
     // Convert to KB and MB with precision
@@ -233,7 +382,14 @@ router.get('/storageInfo', async (req, res) => {
     res.json(storageInfo);
   } catch (error) {
     console.error('Error fetching storage info:', error);
-    res.status(500).json({ error: 'Failed to fetch storage information' });
+    // Return default values if we can't get the actual storage info
+    res.json({
+      used: 0,
+      free: 100,
+      totalSizeMB: 0,
+      totalSizeKB: 0,
+      storageLimit: 100
+    });
   }
 });
 

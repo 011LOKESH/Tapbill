@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 
 interface DataItem {
   id: string;
-  type: 'daySummary' | 'billSales' | 'deletedItems' | 'deletedBill';
+  type: 'daySummary' | 'billSales' | 'deletedItems' | 'deletedBills';
   title: string;
   description: string;
 }
@@ -16,6 +16,11 @@ interface DateRange {
   endDate: string;
   endTime: string;
 }
+
+const getAuthHeaders = () => {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
 
 const ExportAndDelete: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +44,9 @@ const ExportAndDelete: React.FC = () => {
   useEffect(() => {
     const fetchStorageInfo = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/export/storageInfo');
+        const response = await fetch('http://localhost:5000/api/export/storageInfo', {
+          headers: getAuthHeaders(),
+        });
         if (!response.ok) throw new Error('Failed to fetch storage info');
         const data = await response.json();
         setStorageInfo(data);
@@ -71,9 +78,9 @@ const ExportAndDelete: React.FC = () => {
       description: 'Overview of removed products from the inventory.',
     },
     {
-      id: 'deletedBill',
-      type: 'deletedBill',
-      title: 'Deleted Bill',
+      id: 'deletedBills',
+      type: 'deletedBills',
+      title: 'Deleted Bills',
       description: 'Details of bills that have been deleted.',
     },
   ];
@@ -116,8 +123,8 @@ const ExportAndDelete: React.FC = () => {
         const endpointMap: Record<string, string> = {
           'daySummary': '/api/export/daySummary',
           'billSales': '/api/export/billSales',
-          'deletedItems': '/api/export/deletedItems',
-          'deletedBill': '/api/export/deletedBill'
+          'deletedItems': '/api/export/deletedItems'
+          // Note: deletedBills is handled directly in handleExport, not here
         };
 
         const endpoint = endpointMap[itemId];
@@ -126,10 +133,20 @@ const ExportAndDelete: React.FC = () => {
           continue;
         }
 
+        // For daySummary and deletedItems, we need to handle them differently
+        // as they return Excel files directly, not JSON data
+        if (itemId === 'daySummary' || itemId === 'deletedItems') {
+          // These endpoints return Excel files directly, so we'll skip them
+          // and handle them separately in the export function
+          console.log(`Skipping ${itemId} as it returns Excel file directly`);
+          continue;
+        }
+
         const response = await fetch(`http://localhost:5000${endpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...getAuthHeaders(),
           },
           body: JSON.stringify({
             dateRange: selectedDate === 'custom' ? dateRange : undefined,
@@ -162,22 +179,107 @@ const ExportAndDelete: React.FC = () => {
     }
 
     try {
-      // Fetch data based on selected items and date range
-      const exportData = await fetchExportData();
-      
       // Create Excel workbook
       const wb = XLSX.utils.book_new();
       
-      // Add each selected item's data as a separate sheet
-      selectedItems.forEach(itemId => {
-        const item = dataItems.find(i => i.id === itemId);
-        if (item && exportData[itemId] && exportData[itemId].length > 0) {
-          // Convert data to worksheet
-          const ws = XLSX.utils.json_to_sheet(exportData[itemId]);
+      // Process each selected item
+      for (const itemId of selectedItems) {
+        try {
+          let sheetData;
+          let sheetName;
+          
+          if (itemId === 'daySummary') {
+            // For day summary, fetch bills and calculate summary
+            const salesResponse = await fetch('http://localhost:5000/api/bill-items', {
+              headers: getAuthHeaders(),
+            });
+            if (!salesResponse.ok) continue;
+            
+            const bills = await salesResponse.json();
+            
+            // Group bills by date and calculate summary
+            const salesByDate = bills.reduce((acc, bill) => {
+              const date = new Date(bill.createdAt).toDateString();
+              if (!acc[date]) {
+                acc[date] = {
+                  date: new Date(bill.createdAt),
+                  numberOfBills: 0,
+                  tax: 0,
+                  totalSale: 0
+                };
+              }
+              acc[date].numberOfBills += 1;
+              acc[date].tax += bill.total * 0.1;
+              acc[date].totalSale += bill.total;
+              return acc;
+            }, {});
+            
+            const sales = Object.values(salesByDate);
+            sheetData = sales.map(sale => ({
+              'Date': format(new Date(sale.date), 'yyyy-MM-dd'),
+              'Number of Bills': sale.numberOfBills,
+              'Tax': sale.tax,
+              'Total Sales': sale.totalSale
+            }));
+            sheetName = 'Day Summary';
+            
+          } else if (itemId === 'deletedItems') {
+            // For deleted items, fetch the deleted items data
+            const itemsResponse = await fetch('http://localhost:5000/api/menu-items/deleted', {
+              headers: getAuthHeaders(),
+            });
+            if (!itemsResponse.ok) continue;
+            
+            const items = await itemsResponse.json();
+            sheetData = items.map(item => ({
+              'Item Name': item.name,
+              'Category': item.category,
+              'Price': item.price,
+              'Deleted At': new Date(item.deletedAt).toLocaleString()
+            }));
+            sheetName = 'Deleted Items';
+            
+          } else if (itemId === 'deletedBills') {
+            // For deleted bills, fetch the deleted bills data
+            const billsResponse = await fetch('http://localhost:5000/api/deleted-bills', {
+              headers: getAuthHeaders(),
+            });
+            if (!billsResponse.ok) continue;
+            
+            const bills = await billsResponse.json();
+            sheetData = bills.map(bill => ({
+              'Bill No': bill.billNo,
+              'Date & Time': new Date(bill.createdAt).toLocaleString(),
+              'Payment Mode': bill.paymentMode,
+              'Quantity': bill.items ? bill.items.length : 0,
+              'Net Amount': bill.total
+            }));
+            sheetName = 'Deleted Bills';
+            
+          } else if (itemId === 'billSales') {
+            // For bill sales, use the existing fetchExportData method
+            const exportData = await fetchExportData();
+            console.log("Bill Sales exportData:", exportData[itemId]);
+            if (exportData[itemId] && exportData[itemId].length > 0) {
+              sheetData = exportData[itemId].map(bill => ({
+                'Bill No': bill['Bill No'],
+                'Date & Time': new Date(bill['Date']).toLocaleString(),
+                'Payment Mode': bill['Payment Mode'],
+                'Quantity': bill['Items'] ? bill['Items'].split(',').length : 0,
+                'Tax': bill['Tax'],
+                'Net Amount': bill['Total Amount']
+              }));
+              sheetName = 'Bill Sales';
+            }
+          }
+
+          // Add sheet to workbook if we have data
+          if (sheetData && sheetData.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(sheetData);
           
           // Set column widths based on content
           const maxWidths: Record<string, number> = {};
-          exportData[itemId].forEach(row => {
+            sheetData.forEach(row => {
             Object.entries(row).forEach(([key, value]) => {
               const length = String(value).length;
               maxWidths[key] = Math.max(maxWidths[key] || 0, length);
@@ -189,9 +291,13 @@ const ExportAndDelete: React.FC = () => {
           }));
           
           // Add worksheet to workbook
-          XLSX.utils.book_append_sheet(wb, ws, item.title);
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+          }
+          
+        } catch (error) {
+          console.error(`Error processing ${itemId}:`, error);
         }
-      });
+      }
 
       // Check if any data was added to the workbook
       if (wb.SheetNames.length === 0) {
@@ -199,11 +305,10 @@ const ExportAndDelete: React.FC = () => {
         return;
       }
 
-      // Generate Excel file
+      // Generate single Excel file with all sheets
       const fileName = `export_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.xlsx`;
       XLSX.writeFile(wb, fileName);
       
-      alert('Export completed successfully!');
     } catch (error) {
       console.error('Export failed:', error);
       alert('Export failed. Please try again.');
@@ -215,8 +320,78 @@ const ExportAndDelete: React.FC = () => {
       alert('Please select at least one item to delete');
       return;
     }
-    // TODO: Implement delete functionality
-    console.log('Deleting items:', selectedItems);
+
+    const confirmed = window.confirm('Are you sure you want to delete the selected data? This action cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      for (const itemId of selectedItems) {
+        try {
+          if (itemId === 'billSales') {
+            // Delete bills within the date range
+            const response = await fetch('http://localhost:5000/api/bill-items/deleteByDateRange', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+              },
+              body: JSON.stringify({
+                dateRange: selectedDate === 'custom' ? dateRange : undefined,
+                dateType: selectedDate
+              })
+            });
+
+            if (response.ok) {
+              console.log('Bills deleted successfully');
+            } else {
+              console.error('Failed to delete bills');
+            }
+          } else if (itemId === 'deletedItems') {
+            // Clear deleted items (this would need a backend endpoint)
+            const response = await fetch('http://localhost:5000/api/menu-items/clearDeleted', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+              }
+            });
+
+            if (response.ok) {
+              console.log('Deleted items cleared successfully');
+            } else {
+              console.error('Failed to clear deleted items');
+            }
+          } else if (itemId === 'deletedBills') {
+            // Clear deleted bills
+            const response = await fetch('http://localhost:5000/api/deleted-bills/clear', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+              }
+            });
+
+            if (response.ok) {
+              console.log('Deleted bills cleared successfully');
+            } else {
+              console.error('Failed to clear deleted bills');
+            }
+          } else if (itemId === 'daySummary') {
+            // For day summary, we don't actually delete data, just clear the summary
+            console.log('Day summary data cannot be deleted as it is calculated from existing bills');
+          }
+        } catch (error) {
+          console.error(`Error deleting ${itemId}:`, error);
+        }
+      }
+
+      alert('Delete operation completed. Please refresh the page to see updated data.');
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Delete failed. Please try again.');
+    }
   };
 
   return (

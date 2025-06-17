@@ -10,6 +10,11 @@ interface SaleData {
   totalSale: number;
 }
 
+const getAuthHeaders = () => {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 const DayWiseSales: React.FC = () => {
   const navigate = useNavigate();
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
@@ -25,7 +30,9 @@ const DayWiseSales: React.FC = () => {
   const fetchDailySales = async () => {
     try {
       // Fetch all bills from the database
-      const response = await fetch('http://localhost:5000/api/bill-items');
+      const response = await fetch('http://localhost:5000/api/bill-items', {
+        headers: getAuthHeaders(),
+      });
       const bills: Array<{ _id: string; createdAt: string; total: number }> = await response.json();
 
       // Group bills by date and calculate daily totals
@@ -127,6 +134,7 @@ const DayWiseSales: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           sales: selectedSalesData,

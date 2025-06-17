@@ -20,6 +20,11 @@ interface CustomDateRange {
   endTime: string;
 }
 
+const getAuthHeaders = () => {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 const DeletedBills: React.FC = () => {
   const navigate = useNavigate();
   const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
@@ -43,7 +48,9 @@ const DeletedBills: React.FC = () => {
 
   const fetchDeletedBills = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/deleted-bills');
+      const response = await fetch('http://localhost:5000/api/deleted-bills', {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       
       const formattedBills: DeletedBillData[] = data.map((bill: any) => ({
@@ -157,6 +164,7 @@ const DeletedBills: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           bills: selectedBillsData,
@@ -178,9 +186,11 @@ const DeletedBills: React.FC = () => {
         document.body.removeChild(a);
       } else {
         console.error('Failed to export deleted bills');
+        alert('Failed to export deleted bills. Please try again.');
       }
     } catch (error) {
       console.error('Error exporting deleted bills:', error);
+      alert('Error exporting deleted bills. Please try again.');
     }
   };
 

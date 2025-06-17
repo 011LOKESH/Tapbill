@@ -1,5 +1,10 @@
 const API_URL = 'http://localhost:5000/api';
 
+function getAuthHeaders() {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 export interface BillItem {
   _id: number;
   name: string;
@@ -10,7 +15,11 @@ export interface BillItem {
 
 export const api = {
   async getBillItems(): Promise<BillItem[]> {
-    const response = await fetch(`${API_URL}/bill-items`);
+    const response = await fetch(`${API_URL}/bill-items`, {
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
     return response.json();
   },
 
@@ -19,6 +28,7 @@ export const api = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeaders(),
       },
       body: JSON.stringify({ name, price }),
     });
@@ -30,6 +40,7 @@ export const api = {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeaders(),
       },
       body: JSON.stringify({ quantity }),
     });
@@ -39,12 +50,18 @@ export const api = {
   async deleteBillItem(id: number): Promise<void> {
     await fetch(`${API_URL}/bill-items/${id}`, {
       method: 'DELETE',
+      headers: {
+        ...getAuthHeaders(),
+      },
     });
   },
 
   async clearBill(): Promise<void> {
     await fetch(`${API_URL}/bill-items`, {
       method: 'DELETE',
+      headers: {
+        ...getAuthHeaders(),
+      },
     });
   },
 }; 

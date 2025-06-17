@@ -51,7 +51,10 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
   useEffect(() => {
     const fetchLastBill = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/last-bill');
+        const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+        const response = await fetch('http://localhost:5000/api/last-bill', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to fetch last bill');
@@ -178,10 +181,12 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
       console.log('Bill data to save:', billData);
 
       try {
+        const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
         const response = await fetch('http://localhost:5000/api/bill-items', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(billData),
         });

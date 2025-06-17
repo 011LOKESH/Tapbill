@@ -29,7 +29,10 @@ const MenuCategories: React.FC<MenuCategoriesProps> = ({ onItemClick }) => {
 
   const fetchMenuItems = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/menu-items');
+      const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+      const response = await fetch('http://localhost:5000/api/menu-items', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const items: MenuItem[] = await response.json();
       
       // Group items by category

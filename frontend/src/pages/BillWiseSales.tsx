@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DateFilterModal from '@/components/tapbill/DateFilterModal';
+import * as XLSX from 'xlsx';
 
 interface BillData {
   id: string;
@@ -42,7 +43,10 @@ const BillWiseSales: React.FC = () => {
 
   const fetchBills = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/bill-items');
+      const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+      const response = await fetch('http://localhost:5000/api/bill-items', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const data = await response.json();
       
       const formattedBills: BillData[] = data.map((bill: any) => ({
@@ -147,8 +151,61 @@ const BillWiseSales: React.FC = () => {
     console.log('Printing selected bills:', Array.from(selectedBills));
   };
 
-  const handleExport = () => {
-    console.log('Exporting selected bills:', Array.from(selectedBills));
+  const getAuthHeaders = () => {
+    const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
+  const handleExport = async () => {
+    try {
+      const selectedBillsData = filteredBills.filter(bill => selectedBills.has(bill.id));
+      
+      if (selectedBillsData.length === 0) {
+        alert('Please select at least one bill to export');
+        return;
+      }
+
+      // Create Excel workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Prepare data for export
+      const exportData = selectedBillsData.map(bill => ({
+        'Bill No': bill.billNo,
+        'Date & Time': new Date(bill.dateTime).toLocaleString(),
+        'Payment Mode': bill.paymentMode,
+        'Quantity': bill.qty,
+        'Tax': bill.tax,
+        'Net Amount': bill.netAmount
+      }));
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      
+      // Set column widths
+      const maxWidths: Record<string, number> = {};
+      exportData.forEach(row => {
+        Object.entries(row).forEach(([key, value]) => {
+          const length = String(value).length;
+          maxWidths[key] = Math.max(maxWidths[key] || 0, length);
+        });
+      });
+      
+      ws['!cols'] = Object.values(maxWidths).map(width => ({
+        wch: Math.min(Math.max(width, 10), 50)
+      }));
+      
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Bill Wise Sales');
+      
+      // Generate and download file
+      const fileName = `bill_wise_sales_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      // Removed the success alert as requested by user
+    } catch (error) {
+      console.error('Error exporting bills:', error);
+      alert('Error exporting bills. Please try again.');
+    }
   };
 
   // Pagination

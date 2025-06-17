@@ -21,7 +21,10 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ isOpen, onClose, onAdd }) =
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/menu-items');
+      const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+      const response = await fetch('http://localhost:5000/api/menu-items', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const items = await response.json();
       const uniqueCategories = Array.from(new Set(items.map((item: { category: string }) => item.category)));
       setCategories(uniqueCategories as string[]);

@@ -151,4 +151,18 @@ router.patch('/:id/restore', async (req, res) => {
   }
 });
 
+// Clear all deleted items permanently
+router.delete('/clearDeleted', async (req, res) => {
+  try {
+    const result = await MenuItem.deleteMany({ isDeleted: true });
+    res.json({ 
+      message: `${result.deletedCount} deleted items cleared permanently`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error clearing deleted items:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router; 

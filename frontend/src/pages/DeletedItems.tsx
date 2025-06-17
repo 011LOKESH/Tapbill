@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 
 interface DeletedItem {
   _id: string;
@@ -17,6 +18,11 @@ interface CustomDateRange {
   endDate: string;
   endTime: string;
 }
+
+const getAuthHeaders = () => {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
 
 const DeletedItems: React.FC = () => {
   const navigate = useNavigate();
@@ -49,7 +55,9 @@ const DeletedItems: React.FC = () => {
       }
       
       console.log('Fetching deleted items from:', url);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
       console.log('Response status:', response.status);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -120,6 +128,7 @@ const DeletedItems: React.FC = () => {
       const restorePromises = Array.from(selectedItems).map(async (id) => {
         const response = await fetch(`http://localhost:5000/api/menu-items/${id}/restore`, {
           method: 'PATCH',
+          headers: getAuthHeaders(),
         });
         if (!response.ok) {
           throw new Error(`Failed to restore item: ${id}`);
@@ -137,34 +146,49 @@ const DeletedItems: React.FC = () => {
   const handleExport = async () => {
     try {
       const selectedItemsData = filteredItems.filter(item => selectedItems.has(item._id));
-      const response = await fetch('http://localhost:5000/api/export/deletedItems', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: selectedItemsData,
-          type: dateFilter,
-          startDate: customDateRange.startDate,
-          endDate: customDateRange.endDate
-        }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `deleted_items_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } else {
-        console.error('Failed to export deleted items');
+      
+      if (selectedItemsData.length === 0) {
+        alert('Please select at least one item to export');
+        return;
       }
+
+      // Create Excel workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Prepare data for export with all required fields
+      const exportData = selectedItemsData.map(item => ({
+        'Category': item.category,
+        'Name': item.name,
+        'Price': item.price,
+        'Type': item.isVeg ? 'Veg' : 'Non-Veg',
+        'Deleted At': new Date(item.deletedAt).toLocaleString()
+      }));
+
+      // Create worksheet
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      
+      // Set column widths
+      const maxWidths: Record<string, number> = {};
+      exportData.forEach(row => {
+        Object.entries(row).forEach(([key, value]) => {
+          const length = String(value).length;
+          maxWidths[key] = Math.max(maxWidths[key] || 0, length);
+        });
+      });
+      
+      ws['!cols'] = Object.values(maxWidths).map(width => ({
+        wch: Math.min(Math.max(width, 10), 50)
+      }));
+      
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Deleted Items');
+      
+      // Generate and download file
+      const fileName = `deleted_items_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
     } catch (error) {
-      console.error('Error exporting deleted items:', error);
+      console.error('Error exporting items:', error);
+      alert('Error exporting items. Please try again.');
     }
   };
 

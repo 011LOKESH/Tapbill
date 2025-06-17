@@ -4,6 +4,11 @@ import BillDetailsModal from '@/components/tapbill/BillDetailsModal'; // Import 
 import DateFilterModal from '@/components/tapbill/DateFilterModal'; // Import the date filter modal
 import { BillItem } from '@/services/api'; // Adjust the import based on your structure
 
+const getAuthHeaders = () => {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 const EditBill: React.FC = () => {
   const navigate = useNavigate();
   const [bills, setBills] = useState<any[]>([]); // Adjust type as needed
@@ -21,7 +26,9 @@ const EditBill: React.FC = () => {
   useEffect(() => {
     const fetchBills = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bill-items');
+        const response = await fetch('http://localhost:5000/api/bill-items', {
+          headers: getAuthHeaders(),
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch bills');
         }
@@ -115,6 +122,7 @@ const EditBill: React.FC = () => {
       try {
         const response = await fetch(`http://localhost:5000/api/bill-items/${id}`, {
           method: 'DELETE',
+          headers: getAuthHeaders(),
         });
         if (!response.ok) {
           const errorMessage = await response.text(); // Get error message from response
