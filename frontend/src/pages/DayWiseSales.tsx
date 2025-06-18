@@ -164,7 +164,7 @@ const DayWiseSales: React.FC = () => {
       doc.text(`${sale.numberOfBills}`, 130, y);
       doc.text(`${sale.tax.toFixed(2)}`, 200, y);
       doc.text(`${sale.totalSale.toFixed(2)}`, 245, y);
-      addSpace(lineGap - 2);
+      addSpace(lineGap + 5);
     });
     dottedLine();
     // Footer

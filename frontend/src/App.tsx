@@ -18,6 +18,7 @@ import ExportAndDelete from './pages/ExportAndDelete';
 import DeletedItems from './pages/DeletedItems';
 import Login from './pages/Login';
 import UserDetails from './pages/UserDetails';
+import DaySummary from './pages/DaySummary';
 
 const queryClient = new QueryClient();
 
@@ -114,6 +115,11 @@ const App = () => (
           <Route path="/user-details" element={
             <ProtectedRoute>
               <UserDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/day-summary" element={
+            <ProtectedRoute>
+              <DaySummary />
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
