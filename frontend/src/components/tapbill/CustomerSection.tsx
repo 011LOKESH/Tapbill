@@ -331,7 +331,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
       addSpace(lineGap);
       dottedLine();
       // Bill info
-      doc.text(`Bill No: ${savedBill._id || '-'}`, 30, y);
+      doc.text(`Bill No: ${savedBill.billNo || '-'}`, 30, y);
       doc.text(`Date: ${formatDateTime(new Date())}`, 170, y);
       addSpace(lineGap);
       dottedLine();
@@ -367,7 +367,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
       doc.setFontSize(11);
       doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
       // Save PDF
-      doc.save(`Bill_${savedBill._id || 'NA'}.pdf`);
+      doc.save(`Bill_${savedBill.billNo || 'NA'}.pdf`);
     } catch (error) {
       console.error('Error saving/printing bill:', error);
     } finally {

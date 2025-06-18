@@ -55,7 +55,7 @@ const BillWiseSales: React.FC = () => {
       
       const formattedBills: BillData[] = data.map((bill: any) => ({
         id: bill._id,
-        billNo: bill._id,
+        billNo: bill.billNo,
         dateTime: bill.createdAt,
         paymentMode: bill.paymentMode || 'Cash',
         tax: bill.total * 0.1,
@@ -190,7 +190,7 @@ const BillWiseSales: React.FC = () => {
       doc.text(`${bill.qty}`, 190, y);
       doc.text(`${bill.tax.toFixed(2)}`, 220, y);
       doc.text(`${bill.netAmount.toFixed(2)}`, 250, y);
-      addSpace(lineGap - 2);
+      addSpace(lineGap + 5); // Increased spacing for better readability
     });
     dottedLine();
     // Footer

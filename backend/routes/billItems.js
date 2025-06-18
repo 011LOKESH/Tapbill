@@ -64,7 +64,7 @@ router.delete('/:id', async (req, res) => {
       // Create a new deleted bill document
       const deletedBill = new DeletedBill({
         _id: bill._id,
-        billNo: bill._id, // Keep it as a number
+        billNo: bill.billNo, // Use the actual billNo instead of _id
         items: bill.items,
         total: bill.total,
         createdAt: bill.createdAt,
@@ -128,7 +128,7 @@ router.delete('/deleteByDateRange', async (req, res) => {
     for (const bill of billsToDelete) {
       const deletedBill = new DeletedBill({
         _id: bill._id,
-        billNo: bill._id,
+        billNo: bill.billNo,
         items: bill.items,
         total: bill.total,
         createdAt: bill.createdAt,

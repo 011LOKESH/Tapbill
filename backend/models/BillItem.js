@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Counter = require('./Counter');
 
 const shortBillCounterSchema = new mongoose.Schema({
-  billNo: { type: Number, default: 1000 },
+  billNo: { type: Number, default: 100 },
 });
 const ShortBillCounter = mongoose.model('ShortBillCounter', shortBillCounterSchema);
 

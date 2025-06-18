@@ -59,7 +59,7 @@ const DeletedBills: React.FC = () => {
       
       const formattedBills: DeletedBillData[] = data.map((bill: any) => ({
         id: bill._id,
-        billNo: `#${bill.billNo}`,
+        billNo: bill.billNo,
         dateTime: bill.createdAt,
         paymentMode: bill.paymentMode || 'Cash',
         tax: bill.total * 0.1,
@@ -194,7 +194,7 @@ const DeletedBills: React.FC = () => {
       doc.text(new Date(bill.dateTime).toLocaleString(), 110, y, { maxWidth: 70 });
       doc.text(`${bill.tax.toFixed(2)}`, 190, y);
       doc.text(`${bill.netAmount.toFixed(2)}`, 235, y);
-      addSpace(lineGap - 2);
+      addSpace(lineGap + 5); // Increased spacing for better readability
     });
     dottedLine();
     // Footer

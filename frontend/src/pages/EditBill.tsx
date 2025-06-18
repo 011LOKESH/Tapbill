@@ -72,7 +72,7 @@ const EditBill: React.FC = () => {
     
     // Filter bills based on the search query
     const filtered = bills.filter(bill => 
-      String(bill._id).includes(query) || 
+      String(bill.billNo).includes(query) || 
       bill.total.toString().includes(query) ||
       new Date(bill.createdAt).toLocaleDateString().includes(query)
     );
@@ -182,7 +182,7 @@ const EditBill: React.FC = () => {
     addSpace(lineGap);
     dottedLine();
     // Bill info
-    doc.text(`Bill No: ${bill._id || '-'}`, 30, y);
+    doc.text(`Bill No: ${bill.billNo || '-'}`, 30, y);
     doc.text(`Date: ${formatDateTime(bill.createdAt)}`, 170, y);
     addSpace(lineGap);
     dottedLine();
@@ -218,7 +218,7 @@ const EditBill: React.FC = () => {
     doc.setFontSize(11);
     doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
     // Only download PDF (no print, no new tab)
-    doc.save(`Bill_${bill._id || 'NA'}.pdf`);
+    doc.save(`Bill_${bill.billNo || 'NA'}.pdf`);
   };
 
   return (
@@ -249,7 +249,7 @@ const EditBill: React.FC = () => {
               <li key={bill._id} className="bg-white p-3 rounded-lg shadow-sm">
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="font-bold">Bill #{bill._id}</div>
+                    <div className="font-bold">Bill #{bill.billNo}</div>
                     <div className="text-sm text-gray-600">
                       {new Date(bill.createdAt).toLocaleTimeString()}
                     </div>
@@ -335,7 +335,7 @@ const EditBill: React.FC = () => {
                       />
                     </td>
                     <td className="px-4 py-2 text-center">{index + 1}</td>
-                    <td className="px-4 py-2 text-center">#{bill._id}</td>
+                    <td className="px-4 py-2 text-center">#{bill.billNo}</td>
                     <td className="px-4 py-2 text-center">
                       {new Date(bill.createdAt).toLocaleString()}
                     </td>
