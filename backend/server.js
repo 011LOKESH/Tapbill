@@ -11,6 +11,7 @@ const BillItem = require('./models/BillItem');
 const Counter = require('./models/Counter');
 const exportRoutes = require('./routes/export');
 const jwt = require('jsonwebtoken');
+const userDetailsRouter = require('./routes/userDetails');
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ app.use('/api/bill-items', authenticateToken, billItemRoutes);
 app.use('/api/deleted-bills', authenticateToken, deletedBillRoutes);
 app.use('/api/menu-items', authenticateToken, menuItemRoutes);
 app.use('/api/export', authenticateToken, exportRoutes);
+app.use('/api/user-details', authenticateToken, userDetailsRouter);
 
 // Get the last bill item
 app.get('/api/last-bill', authenticateToken, async (req, res) => {

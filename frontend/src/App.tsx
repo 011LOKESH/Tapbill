@@ -17,6 +17,7 @@ import CustomizeMenu from './pages/CustomizeMenu';
 import ExportAndDelete from './pages/ExportAndDelete';
 import DeletedItems from './pages/DeletedItems';
 import Login from './pages/Login';
+import UserDetails from './pages/UserDetails';
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,11 @@ const App = () => (
           <Route path="/deleted-items" element={
             <ProtectedRoute>
               <DeletedItems />
+            </ProtectedRoute>
+          } />
+          <Route path="/user-details" element={
+            <ProtectedRoute>
+              <UserDetails />
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />

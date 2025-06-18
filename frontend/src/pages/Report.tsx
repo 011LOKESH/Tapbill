@@ -29,7 +29,7 @@ const Report: React.FC = () => {
         // Handle bill sales print navigation
         break;
       case 'user-report':
-        // Handle user report navigation
+        navigate('/user-details');
         break;
       default:
         console.log(`Clicked on ${category}`);

@@ -18,7 +18,7 @@ node seedMenuData.js
 
 npm install react-router-dom
 
-
+cd Tapbill
 git init
 git add .
 git commit -m "message"

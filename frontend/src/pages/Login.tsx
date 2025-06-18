@@ -22,7 +22,7 @@ const Login = () => {
       const now = new Date().getTime();
       // Check if session is less than 12 hours old
       if (now - timestamp < 12 * 60 * 60 * 1000) {
-        navigate('/dashboard');
+        navigate('/');
       } else {
         localStorage.removeItem('userSession');
       }
@@ -48,7 +48,7 @@ const Login = () => {
           timestamp: new Date().getTime()
         }));
         toast.success('Login successful!');
-        navigate('/dashboard');
+        navigate('/');
       } else {
         toast.error('Invalid credentials');
       }
