@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import { api, ShopDetails } from '@/services/api';
 
 interface DeletedBillData {
   id: string;
@@ -41,9 +43,11 @@ const DeletedBills: React.FC = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [shopDetails, setShopDetails] = useState<ShopDetails | null>(null);
 
   useEffect(() => {
     fetchDeletedBills();
+    api.getShopDetails().then(setShopDetails);
   }, [dateFilter, customDateRange]);
 
   const fetchDeletedBills = async () => {
@@ -153,8 +157,56 @@ const DeletedBills: React.FC = () => {
     setSelectedBills(newSelectedBills);
   };
 
+  const printDeletedBillsReceipt = (billsToPrint: DeletedBillData[], fileName = 'DeletedBills.pdf') => {
+    const doc = new jsPDF({ unit: 'pt', format: [300, 600 + billsToPrint.length * 20] });
+    let y = 30;
+    const lineGap = 18;
+    const addSpace = (space = 8) => { y += space; };
+    const dottedLine = () => {
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(20, y, 280, y);
+      addSpace(8);
+      doc.setLineDashPattern([], 0);
+      addSpace(6);
+    };
+    // Shop details
+    doc.setFontSize(14);
+    doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
+    addSpace(lineGap);
+    doc.setFontSize(10);
+    doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
+    addSpace(lineGap);
+    dottedLine();
+    // Table header
+    doc.setFont(undefined, 'bold');
+    doc.text('S.No', 30, y);
+    doc.text('Bill No', 65, y);
+    doc.text('Date & Time', 110, y);
+    doc.text('Tax', 190, y);
+    doc.text('Net Amt', 235, y);
+    doc.setFont(undefined, 'normal');
+    addSpace(lineGap - 2);
+    dottedLine();
+    // Table rows
+    billsToPrint.forEach((bill, idx) => {
+      doc.text(`${idx + 1}`, 30, y);
+      doc.text(String(bill.billNo), 65, y);
+      doc.text(new Date(bill.dateTime).toLocaleString(), 110, y, { maxWidth: 70 });
+      doc.text(`${bill.tax.toFixed(2)}`, 190, y);
+      doc.text(`${bill.netAmount.toFixed(2)}`, 235, y);
+      addSpace(lineGap - 2);
+    });
+    dottedLine();
+    // Footer
+    doc.setFontSize(11);
+    doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
+    doc.save(fileName);
+  };
+
   const handlePrint = () => {
-    console.log('Printing selected bills:', Array.from(selectedBills));
+    const selected = filteredBills.filter(bill => selectedBills.has(bill.id));
+    if (selected.length === 0) return;
+    printDeletedBillsReceipt(selected, 'DeletedBills_Selected.pdf');
   };
 
   const handleExport = async () => {

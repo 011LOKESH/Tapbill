@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import { api, ShopDetails } from '@/services/api';
 
 interface DeletedItem {
   _id: string;
@@ -40,9 +42,11 @@ const DeletedItems: React.FC = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [shopDetails, setShopDetails] = useState<ShopDetails | null>(null);
 
   useEffect(() => {
     fetchDeletedItems();
+    api.getShopDetails().then(setShopDetails);
   }, [dateFilter, customDateRange]);
 
   const fetchDeletedItems = async () => {
@@ -190,6 +194,60 @@ const DeletedItems: React.FC = () => {
       console.error('Error exporting items:', error);
       alert('Error exporting items. Please try again.');
     }
+  };
+
+  const printDeletedItemsReceipt = (itemsToPrint: DeletedItem[], fileName = 'DeletedItems.pdf') => {
+    const doc = new jsPDF({ unit: 'pt', format: [420, 600 + itemsToPrint.length * 20] });
+    let y = 30;
+    const lineGap = 18;
+    const addSpace = (space = 8) => { y += space; };
+    const dottedLine = () => {
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(20, y, 400, y);
+      addSpace(8);
+      doc.setLineDashPattern([], 0);
+      addSpace(6);
+    };
+    // Shop details
+    doc.setFontSize(14);
+    doc.text(shopDetails?.shopName || 'SHOP NAME', 210, y, { align: 'center' });
+    addSpace(lineGap);
+    doc.setFontSize(10);
+    doc.text(shopDetails?.shopAddress || 'Shop Address', 210, y, { align: 'center' });
+    addSpace(lineGap);
+    dottedLine();
+    // Table header
+    doc.setFont(undefined, 'bold');
+    doc.text('S.No', 30, y);
+    doc.text('Category', 65, y);
+    doc.text('Name', 120, y);
+    doc.text('Price', 200, y);
+    doc.text('Type', 250, y);
+    doc.text('Deleted At', 300, y);
+    doc.setFont(undefined, 'normal');
+    addSpace(lineGap - 2);
+    dottedLine();
+    // Table rows
+    itemsToPrint.forEach((item, idx) => {
+      doc.text(`${idx + 1}`, 30, y);
+      doc.text(item.category, 65, y);
+      doc.text(item.name, 120, y, { maxWidth: 70 });
+      doc.text(`${item.price.toFixed(2)}`, 200, y);
+      doc.text(item.isVeg ? 'Veg' : 'Non-Veg', 250, y);
+      doc.text(new Date(item.deletedAt).toLocaleString(), 300, y, { maxWidth: 100 });
+      addSpace(lineGap - 2);
+    });
+    dottedLine();
+    // Footer
+    doc.setFontSize(11);
+    doc.text('Thank You, Visit again.', 210, y + 10, { align: 'center' });
+    doc.save(fileName);
+  };
+
+  const handlePrint = () => {
+    const selected = filteredItems.filter(item => selectedItems.has(item._id));
+    if (selected.length === 0) return;
+    printDeletedItemsReceipt(selected, 'DeletedItems_Selected.pdf');
   };
 
   // Pagination

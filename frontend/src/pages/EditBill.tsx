@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BillDetailsModal from '@/components/tapbill/BillDetailsModal'; // Import the modal component
 import DateFilterModal from '@/components/tapbill/DateFilterModal'; // Import the date filter modal
-import { BillItem } from '@/services/api'; // Adjust the import based on your structure
+import { BillItem, api, Customer, ShopDetails } from '@/services/api'; // Adjust the import based on your structure
+import jsPDF from 'jspdf';
 
 const getAuthHeaders = () => {
   const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
@@ -18,6 +19,7 @@ const EditBill: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState(''); // State for search input
   const [filteredBills, setFilteredBills] = useState<any[]>([]); // State for filtered bills
   const [selectedBills, setSelectedBills] = useState<Set<string>>(new Set()); // State to track selected bills
+  const [shopDetails, setShopDetails] = useState<ShopDetails | null>(null);
 
   const navigateToMenu = () => {
     navigate('/menu'); // Navigate back to the MenuPage
@@ -41,6 +43,7 @@ const EditBill: React.FC = () => {
     };
 
     fetchBills();
+    api.getShopDetails().then(setShopDetails);
   }, []);
 
   const getTodayBills = () => {
@@ -112,8 +115,12 @@ const EditBill: React.FC = () => {
   };
 
   const handlePrintSelected = () => {
-    // Logic to print selected bills
-    console.log("Print selected bills:", Array.from(selectedBills));
+    // Print all selected bills
+    filteredBills.forEach((bill) => {
+      if (selectedBills.has(bill._id)) {
+        handlePrintBill(bill);
+      }
+    });
   };
 
   const handleDeleteSelected = async () => {
@@ -141,6 +148,77 @@ const EditBill: React.FC = () => {
     setFilteredBills(remainingBills); // Update the filtered bills state
     setSelectedBills(new Set()); // Clear selected bills
     console.log("Deleted selected bills:", Array.from(selectedBills));
+  };
+
+  const formatDateTime = (date: Date) => {
+    const d = new Date(date);
+    return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const handlePrintBill = (bill: any) => {
+    const doc = new jsPDF({ unit: 'pt', format: [300, 600] });
+    let y = 30;
+    const lineGap = 18;
+    const addSpace = (space = 8) => { y += space; };
+    const dottedLine = () => {
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(20, y, 280, y);
+      addSpace(8);
+      doc.setLineDashPattern([], 0);
+      addSpace(6);
+    };
+    // Shop details
+    doc.setFontSize(14);
+    doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
+    addSpace(lineGap);
+    doc.setFontSize(10);
+    doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
+    addSpace(lineGap);
+    dottedLine();
+    // Customer details (not available in bill, so show dash)
+    doc.setFontSize(10);
+    doc.text(`Customer: -`, 30, y);
+    doc.text(`Phone: -`, 170, y);
+    addSpace(lineGap);
+    dottedLine();
+    // Bill info
+    doc.text(`Bill No: ${bill._id || '-'}`, 30, y);
+    doc.text(`Date: ${formatDateTime(bill.createdAt)}`, 170, y);
+    addSpace(lineGap);
+    dottedLine();
+    // Table header
+    doc.setFont(undefined, 'bold');
+    doc.text('S.No', 30, y);
+    doc.text('Item', 65, y);
+    doc.text('Qty', 160, y);
+    doc.text('Price', 200, y);
+    doc.text('Amt', 245, y);
+    doc.setFont(undefined, 'normal');
+    addSpace(lineGap - 2);
+    dottedLine();
+    // Table rows
+    bill.items.forEach((item: any, idx: number) => {
+      doc.text(`${idx + 1}`, 30, y);
+      doc.text(item.name, 65, y, { maxWidth: 90 });
+      doc.text(`${item.quantity}`, 160, y);
+      doc.text(`${item.price.toFixed(2)}`, 200, y);
+      doc.text(`${(item.price * item.quantity).toFixed(2)}`, 245, y);
+      addSpace(lineGap - 2);
+    });
+    dottedLine();
+    // Totals
+    const totalQty = bill.items.reduce((sum: number, i: any) => sum + i.quantity, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Qty: ${totalQty}`, 30, y);
+    doc.text(`Total: ₹${bill.total.toFixed(2)}`, 170, y); // No superscript or formatting
+    doc.setFont(undefined, 'normal');
+    addSpace(lineGap);
+    dottedLine();
+    // Footer
+    doc.setFontSize(11);
+    doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
+    // Only download PDF (no print, no new tab)
+    doc.save(`Bill_${bill._id || 'NA'}.pdf`);
   };
 
   return (
@@ -271,9 +349,19 @@ const EditBill: React.FC = () => {
                     <td className="px-4 py-2 text-center">
                       <button
                         onClick={() => handleViewDetails(bill)}
-                        className="text-blue-500 hover:text-blue-700"
+                        className="text-blue-500 hover:text-blue-700 mr-2"
                       >
                         View
+                      </button>
+                      <button
+                        onClick={() => handlePrintBill(bill)}
+                        className="inline-flex items-center justify-center bg-gray-100 hover:bg-[rgb(56,224,120)] text-gray-700 hover:text-white rounded-full p-2 transition-colors"
+                        title="Print"
+                        aria-label="Print Bill"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V4a1 1 0 011-1h10a1 1 0 011 1v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1m-10 0v2a1 1 0 001 1h6a1 1 0 001-1v-2m-8 0h8" />
+                        </svg>
                       </button>
                     </td>
                   </tr>

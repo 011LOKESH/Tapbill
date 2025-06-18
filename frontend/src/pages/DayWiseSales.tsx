@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DateFilterModal from '@/components/tapbill/DateFilterModal';
+import jsPDF from 'jspdf';
+import { api, ShopDetails } from '@/services/api';
 
 interface SaleData {
   id: number;
@@ -22,9 +24,11 @@ const DayWiseSales: React.FC = () => {
   const [selectedSales, setSelectedSales] = useState<Set<number>>(new Set());
   const [filteredSales, setFilteredSales] = useState<SaleData[]>([]);
   const [sales, setSales] = useState<SaleData[]>([]);
+  const [shopDetails, setShopDetails] = useState<ShopDetails | null>(null);
 
   useEffect(() => {
     fetchDailySales();
+    api.getShopDetails().then(setShopDetails);
   }, []);
 
   const fetchDailySales = async () => {
@@ -123,8 +127,60 @@ const DayWiseSales: React.FC = () => {
     setSelectedSales(newSelectedSales);
   };
 
+  const printSalesReceipt = (salesToPrint: SaleData[], fileName = 'DayWiseSales.pdf') => {
+    const doc = new jsPDF({ unit: 'pt', format: [300, 600 + salesToPrint.length * 20] });
+    let y = 30;
+    const lineGap = 18;
+    const addSpace = (space = 8) => { y += space; };
+    const dottedLine = () => {
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(20, y, 280, y);
+      addSpace(8);
+      doc.setLineDashPattern([], 0);
+      addSpace(6);
+    };
+    // Shop details
+    doc.setFontSize(14);
+    doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
+    addSpace(lineGap);
+    doc.setFontSize(10);
+    doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
+    addSpace(lineGap);
+    dottedLine();
+    // Table header
+    doc.setFont(undefined, 'bold');
+    doc.text('S.No', 30, y);
+    doc.text('Date', 65, y);
+    doc.text('No of Bills', 130, y);
+    doc.text('Tax', 200, y);
+    doc.text('Total Sales', 245, y);
+    doc.setFont(undefined, 'normal');
+    addSpace(lineGap - 2);
+    dottedLine();
+    // Table rows
+    salesToPrint.forEach((sale, idx) => {
+      doc.text(`${idx + 1}`, 30, y);
+      doc.text(sale.date, 65, y);
+      doc.text(`${sale.numberOfBills}`, 130, y);
+      doc.text(`${sale.tax.toFixed(2)}`, 200, y);
+      doc.text(`${sale.totalSale.toFixed(2)}`, 245, y);
+      addSpace(lineGap - 2);
+    });
+    dottedLine();
+    // Footer
+    doc.setFontSize(11);
+    doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
+    doc.save(fileName);
+  };
+
   const handlePrint = () => {
-    console.log('Printing selected sales:', Array.from(selectedSales));
+    const selected = filteredSales.filter(sale => selectedSales.has(sale.id));
+    if (selected.length === 0) return;
+    printSalesReceipt(selected, 'DayWiseSales_Selected.pdf');
+  };
+
+  const handlePrintSingle = (sale: SaleData) => {
+    printSalesReceipt([sale], `DayWiseSales_${sale.date}.pdf`);
   };
 
   const handleExport = async () => {
@@ -263,10 +319,14 @@ const DayWiseSales: React.FC = () => {
                     <td className="px-6 py-4 text-center">₹{sale.totalSale.toFixed(2)}</td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => handlePrint()}
-                        className="text-blue-500 hover:text-blue-700"
+                        onClick={() => handlePrintSingle(sale)}
+                        className="inline-flex items-center justify-center bg-gray-100 hover:bg-[rgb(56,224,120)] text-gray-700 hover:text-white rounded-full p-2 transition-colors"
+                        title="Print"
+                        aria-label="Print Sale"
                       >
-                        🖨️
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V4a1 1 0 011-1h10a1 1 0 011 1v5M6 18H5a2 2 0 01-2-2v-5a2 2 0 012-2h14a2 2 0 012 2v5a2 2 0 01-2 2h-1m-10 0v2a1 1 0 001 1h6a1 1 0 001-1v-2m-8 0h8" />
+                        </svg>
                       </button>
                     </td>
                   </tr>
