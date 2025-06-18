@@ -13,6 +13,17 @@ export interface BillItem {
   total: number;
 }
 
+export interface ShopDetails {
+  shopName: string;
+  shopAddress: string;
+}
+
+export interface Customer {
+  _id: string;
+  name: string;
+  contact: string;
+}
+
 export const api = {
   async getBillItems(): Promise<BillItem[]> {
     const response = await fetch(`${API_URL}/bill-items`, {
@@ -63,5 +74,32 @@ export const api = {
         ...getAuthHeaders(),
       },
     });
+  },
+
+  async getShopDetails(): Promise<ShopDetails> {
+    const response = await fetch(`${API_URL}/user-details`, {
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+    return response.json();
+  },
+
+  async getCustomers(): Promise<Customer[]> {
+    const response = await fetch(`${API_URL}/customers`, {
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+    return response.json();
+  },
+
+  async getLastBill(): Promise<any> {
+    const response = await fetch(`${API_URL}/last-bill`, {
+      headers: {
+        ...getAuthHeaders(),
+      },
+    });
+    return response.json();
   },
 }; 

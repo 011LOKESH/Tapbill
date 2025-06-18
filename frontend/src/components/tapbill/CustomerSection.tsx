@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import SearchBar from "./SearchBar";
 import MenuCategories from "./MenuCategories";
 import PricingArea from "./PricingArea";
+import jsPDF from 'jspdf';
+import { api, Customer, ShopDetails } from '@/services/api';
 
 interface CustomerSectionProps {
   onSearch?: (query: string) => void;
@@ -35,6 +37,12 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [showLastBillPopup, setShowLastBillPopup] = useState(false);
   const [lastBillDetails, setLastBillDetails] = useState<LastBillDetails | null>(null);
+  const [shopDetails, setShopDetails] = useState<ShopDetails | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [billNo, setBillNo] = useState<number | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // Initialize with Menu 1 on component mount
   useEffect(() => {
@@ -74,12 +82,29 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
     fetchLastBill();
   }, []);
 
+  // Fetch shop details, customers, and last bill number
+  useEffect(() => {
+    api.getShopDetails().then(setShopDetails);
+    api.getCustomers().then(setCustomers);
+    api.getLastBill().then(bill => setBillNo(bill && bill._id ? bill._id + 1 : 1000000001));
+  }, []);
+
   const handleAddCustomer = () => {
     navigate('/customer-details');
   };
 
   const handleCustomerNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCustomerName(e.target.value);
+  };
+
+  const handleCustomerSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerSearch(e.target.value);
+    setSelectedCustomer(null);
+  };
+
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setCustomerSearch(customer.name);
   };
 
   const handleItemClick = (name: string, price: number) => {
@@ -150,6 +175,9 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
     };
     setMenus(prev => [...prev, newMenu]);
     setActiveMenuId(newMenu.id);
+    // Clear customer selection after adding new menu
+    setSelectedCustomer(null);
+    setCustomerSearch('');
   };
 
   const handleDeleteMenu = (menuId: string) => {
@@ -221,18 +249,157 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
   const activeMenu = menus.find(menu => menu.id === activeMenuId);
   const currentTotal = activeMenu?.items.reduce((total, item) => total + (item.price * item.quantity), 0) || 0;
 
+  // Helper to format date and time
+  const formatDateTime = (date: Date) => {
+    const d = new Date(date);
+    return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  // Dummy phone number for now (replace with actual selected customer phone if available)
+  const customerPhone = '';
+
+  // Print Bill handler
+  const handlePrintBill = async () => {
+    if (!activeMenu || activeMenu.items.length === 0 || isPrinting) return;
+    setIsPrinting(true);
+    const total = activeMenu.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const billData = {
+      items: activeMenu.items.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity
+      })),
+      total,
+      createdAt: new Date()
+    };
+    try {
+      const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+      const response = await fetch('http://localhost:5000/api/bill-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(billData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save bill');
+      }
+      const savedBill = await response.json();
+      // Clear the current menu items
+      setMenus(prevMenus =>
+        prevMenus.map(menu =>
+          menu.id === activeMenu.id
+            ? { ...menu, items: [] }
+            : menu
+        )
+      );
+      setLastBillDetails({
+        items: activeMenu.items,
+        total,
+        timestamp: new Date(),
+      });
+      // Clear customer selection after printing
+      setSelectedCustomer(null);
+      setCustomerSearch('');
+      // Print PDF with correct bill number
+      const doc = new jsPDF({ unit: 'pt', format: [300, 600] });
+      let y = 30;
+      const lineGap = 18;
+      const addSpace = (space = 8) => { y += space; };
+      const dottedLine = () => {
+        doc.setLineDashPattern([2, 2], 0);
+        doc.line(20, y, 280, y);
+        addSpace(8);
+        doc.setLineDashPattern([], 0);
+        addSpace(6);
+      };
+      // Shop details
+      doc.setFontSize(14);
+      doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
+      addSpace(lineGap);
+      doc.setFontSize(10);
+      doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
+      addSpace(lineGap);
+      dottedLine();
+      // Customer details (side by side)
+      doc.setFontSize(10);
+      doc.text(`Customer: ${selectedCustomer?.name || '-'}`, 30, y);
+      doc.text(`Phone: ${selectedCustomer?.contact || '-'}`, 170, y);
+      addSpace(lineGap);
+      dottedLine();
+      // Bill info
+      doc.text(`Bill No: ${savedBill._id || '-'}`, 30, y);
+      doc.text(`Date: ${formatDateTime(new Date())}`, 170, y);
+      addSpace(lineGap);
+      dottedLine();
+      // Table header
+      doc.setFont(undefined, 'bold');
+      doc.text('S.No', 30, y);
+      doc.text('Item', 65, y);
+      doc.text('Qty', 160, y);
+      doc.text('Price', 200, y);
+      doc.text('Amt', 245, y);
+      doc.setFont(undefined, 'normal');
+      addSpace(lineGap - 2);
+      dottedLine();
+      // Table rows
+      activeMenu.items.forEach((item, idx) => {
+        doc.text(`${idx + 1}`, 30, y);
+        doc.text(item.name, 65, y, { maxWidth: 90 });
+        doc.text(`${item.quantity}`, 160, y);
+        doc.text(`${item.price.toFixed(2)}`, 200, y);
+        doc.text(`${(item.price * item.quantity).toFixed(2)}`, 245, y);
+        addSpace(lineGap - 2);
+      });
+      dottedLine();
+      // Totals
+      const totalQty = activeMenu.items.reduce((sum, i) => sum + i.quantity, 0);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Total Qty: ${totalQty}`, 30, y);
+      doc.text(`Total: ₹${total.toFixed(2)}`, 170, y);
+      doc.setFont(undefined, 'normal');
+      addSpace(lineGap);
+      dottedLine();
+      // Footer
+      doc.setFontSize(11);
+      doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
+      // Save PDF
+      doc.save(`Bill_${savedBill._id || 'NA'}.pdf`);
+    } catch (error) {
+      console.error('Error saving/printing bill:', error);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   return (
     <div className="flex w-full gap-4">
       <div className="flex flex-col gap-2">
       <div className="flex gap-4">
-        <div className="w-[240px]">
+        <div className="w-[240px] relative">
           <input
             type="text"
-            value={customerName}
-            onChange={handleCustomerNameChange}
+            value={selectedCustomer ? selectedCustomer.name : customerSearch}
+            onChange={handleCustomerSearchChange}
             placeholder="Customer Name"
             className="w-full bg-white border h-10 px-4 rounded-xl border-[rgba(224,224,224,1)] border-solid focus:outline-none focus:ring-2 focus:ring-[rgba(56,224,120,1)] focus:border-transparent text-sm"
+            autoComplete="off"
           />
+          {customerSearch && !selectedCustomer && (
+            <div className="absolute z-10 bg-white border rounded shadow w-full max-h-40 overflow-y-auto">
+              {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase())).map(c => (
+                <div key={c._id} className="px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleSelectCustomer(c)}>
+                  {c.name} ({c.contact})
+                </div>
+              ))}
+              {customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase())).length === 0 && (
+                <div className="px-4 py-2 text-gray-400">No customers found</div>
+              )}
+            </div>
+          )}
         </div>
         <div className="w-[240px]">
           <button
@@ -388,7 +555,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
           >
             Pay
           </button>
-          <button className="bg-[rgb(56,224,120)] text-black font-bold py-2 px-24 rounded-2xl hover:bg-[rgb(46,204,110)] transition-colors">
+          <button onClick={handlePrintBill} disabled={isPrinting} className="bg-[rgb(56,224,120)] text-black font-bold py-2 px-24 rounded-2xl hover:bg-[rgb(46,204,110)] transition-colors">
             Print Bill
           </button>
         </div>
