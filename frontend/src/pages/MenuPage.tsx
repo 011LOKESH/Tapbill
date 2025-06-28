@@ -101,7 +101,7 @@ const MenuPage: React.FC = () => {
       <main className="flex-1 p-6 overflow-y-auto">
         <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           
-          <MenuCard icon={<BillIcon />} label="Billing" path="/" />
+          <MenuCard icon={<BillIcon />} label="Billing" path="/billing" />
           <MenuCard icon={<EditIcon />} label="Edit Bill" path="/edit-bill" />
           <MenuCard icon={<ReportIcon />} label="Reports" path="/report" />
           <MenuCard icon={<PrintIcon />} label="Print Settings" path="/print-settings" />

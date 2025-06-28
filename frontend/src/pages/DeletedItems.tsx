@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { api, ShopDetails } from '@/services/api';
+import { printReport, ReportData } from '@/services/printService';
+import PrinterConfigService from '@/services/printerConfig';
 
 interface DeletedItem {
   _id: string;
@@ -197,57 +199,131 @@ const DeletedItems: React.FC = () => {
   };
 
   const printDeletedItemsReceipt = (itemsToPrint: DeletedItem[], fileName = 'DeletedItems.pdf') => {
-    const doc = new jsPDF({ unit: 'pt', format: [420, 600 + itemsToPrint.length * 20] });
-    let y = 30;
-    const lineGap = 18;
-    const addSpace = (space = 8) => { y += space; };
+    // Use thermal printer format (same as home page)
+    const printerSettings = PrinterConfigService.getSettings();
+    const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+    const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+    // Validate layout before generating PDF
+    if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+      console.warn('PDF layout validation failed, using default 80mm layout');
+    }
+
+    const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+    let y = layout.topMargin;
+    const addSpace = (space = layout.lineHeight) => { y += space; };
     const dottedLine = () => {
       doc.setLineDashPattern([2, 2], 0);
-      doc.line(20, y, 400, y);
-      addSpace(8);
+      doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+      addSpace(layout.sectionSpacing);
       doc.setLineDashPattern([], 0);
-      addSpace(6);
+      addSpace(layout.sectionSpacing);
     };
+
     // Shop details
-    doc.setFontSize(14);
-    doc.text(shopDetails?.shopName || 'SHOP NAME', 210, y, { align: 'center' });
-    addSpace(lineGap);
-    doc.setFontSize(10);
-    doc.text(shopDetails?.shopAddress || 'Shop Address', 210, y, { align: 'center' });
-    addSpace(lineGap);
+    doc.setFontSize(layout.headerFontSize);
+    doc.text(shopDetails?.shopName || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+    addSpace();
+    doc.setFontSize(layout.subHeaderFontSize);
+    if (shopDetails?.shopAddress) {
+      doc.text(shopDetails.shopAddress, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+      addSpace();
+    }
+    if (shopDetails?.phone) {
+      doc.text(`Ph: ${shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+      addSpace();
+    }
     dottedLine();
-    // Table header
-    doc.setFont(undefined, 'bold');
-    doc.text('S.No', 30, y);
-    doc.text('Category', 65, y);
-    doc.text('Name', 120, y);
-    doc.text('Price', 200, y);
-    doc.text('Type', 250, y);
-    doc.text('Deleted At', 300, y);
-    doc.setFont(undefined, 'normal');
-    addSpace(lineGap - 2);
+
+    // Title
+    doc.setFontSize(layout.bodyFontSize);
+    doc.text('Deleted Items Report', layout.centerX, y, { align: 'center' });
+    addSpace();
+    // Format current date and time as DD/MM/YYYY HH:MM
+    const currentDate = new Date();
+    const formattedDateTime = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth()+1).toString().padStart(2, '0')}/${currentDate.getFullYear()} ${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}`;
+    doc.text(formattedDateTime, layout.centerX, y, { align: 'center' });
+    addSpace();
     dottedLine();
-    // Table rows
-    itemsToPrint.forEach((item, idx) => {
-      doc.text(`${idx + 1}`, 30, y);
-      doc.text(item.category, 65, y);
-      doc.text(item.name, 120, y, { maxWidth: 70 });
-      doc.text(`${item.price.toFixed(2)}`, 200, y);
-      doc.text(item.isVeg ? 'Veg' : 'Non-Veg', 250, y);
-      doc.text(new Date(item.deletedAt).toLocaleString(), 300, y, { maxWidth: 100 });
-      addSpace(lineGap - 2);
+
+    // Table headers (no S.No column)
+    doc.setFontSize(layout.itemFontSize);
+    doc.text('Name', layout.columns.item, y);
+    doc.text('Price', layout.columns.qty, y);
+    doc.text('Type', layout.columns.price, y);
+    doc.text('Date', layout.columns.total, y);
+    addSpace();
+    dottedLine();
+
+    // Table rows (no S.No column)
+    itemsToPrint.forEach((item) => {
+      // Format deleted date as DD/MM/YYYY
+      const deletedDate = new Date(item.deletedAt);
+      const formattedDate = `${deletedDate.getDate().toString().padStart(2, '0')}/${(deletedDate.getMonth()+1).toString().padStart(2, '0')}/${deletedDate.getFullYear()}`;
+      doc.text(item.name, layout.columns.item, y, { maxWidth: layout.columnWidths.item });
+      doc.text(String(item.price.toFixed(0)), layout.columns.qty, y);
+      doc.text(item.isVeg ? 'Veg' : 'Non-V', layout.columns.price, y);
+      doc.text(formattedDate, layout.columns.total, y, { maxWidth: layout.columnWidths.total });
+      addSpace();
     });
     dottedLine();
+
     // Footer
-    doc.setFontSize(11);
-    doc.text('Thank You, Visit again.', 210, y + 10, { align: 'center' });
-    doc.save(fileName);
+    doc.setFontSize(layout.bodyFontSize);
+    addSpace(layout.sectionSpacing);
+    doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+    // Save PDF with printer width in filename
+    const thermalFileName = fileName.replace('.pdf', `_${printerSettings.selectedWidth}.pdf`);
+    doc.save(thermalFileName);
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const selected = filteredItems.filter(item => selectedItems.has(item._id));
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      alert('Please select items to print');
+      return;
+    }
+
+    // Prepare report data for direct printing
+    const reportData: ReportData = {
+      title: 'Deleted Items Report',
+      date: new Date().toLocaleDateString(),
+      items: selected.map(item => ({
+        'Name': item.name,
+        'Price': `₹${item.price.toFixed(2)}`,
+        'Category': item.category,
+        'Type': item.isVeg ? 'Veg' : 'Non-Veg',
+        'Deleted': new Date(item.deletedAt).toLocaleDateString()
+      })),
+      totals: {
+        'Total Items': selected.length,
+        'Veg Items': selected.filter(item => item.isVeg).length,
+        'Non-Veg Items': selected.filter(item => !item.isVeg).length
+      }
+    };
+
+    // Try direct printing first
+    let printSuccess = false;
+    try {
+      printSuccess = await printReport(reportData, { silent: true });
+      if (printSuccess) {
+        console.log('✅ Deleted items report printed successfully');
+      }
+    } catch (error) {
+      console.error('Direct print error:', error);
+    }
+
+    // Always generate PDF as backup
     printDeletedItemsReceipt(selected, 'DeletedItems_Selected.pdf');
+
+    // Show result message
+    if (printSuccess) {
+      alert('✅ Report printed successfully! PDF also saved as backup.');
+    } else {
+      alert('⚠️ Direct printing failed. PDF saved successfully.');
+    }
   };
 
   // Pagination

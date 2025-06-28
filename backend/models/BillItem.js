@@ -75,4 +75,4 @@ billItemSchema.statics.createBill = async function(billData) {
   }
 };
 
-module.exports = mongoose.model('BillItem', billItemSchema); 
+module.exports = mongoose.model('BillItem', billItemSchema, 'billitems');

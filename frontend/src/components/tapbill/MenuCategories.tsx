@@ -25,6 +25,18 @@ const MenuCategories: React.FC<MenuCategoriesProps> = ({ onItemClick }) => {
 
   useEffect(() => {
     fetchMenuItems();
+
+    // Listen for new menu items added via barcode scanning
+    const handleMenuItemAdded = (event: CustomEvent) => {
+      console.log('MenuCategories: New item added, refreshing data...', event.detail);
+      fetchMenuItems();
+    };
+
+    window.addEventListener('menuItemAdded', handleMenuItemAdded as EventListener);
+
+    return () => {
+      window.removeEventListener('menuItemAdded', handleMenuItemAdded as EventListener);
+    };
   }, []);
 
   const fetchMenuItems = async () => {

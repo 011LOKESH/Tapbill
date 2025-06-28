@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from '../services/api';
 
 interface Customer {
   _id: string;
@@ -29,7 +30,7 @@ const CustomerDetails: React.FC = () => {
 
   const fetchCustomers = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/customers', {
+      const response = await axios.get(`${API_URL}/customers`, {
         headers: getAuthHeaders(),
       });
       setCustomers(response.data);
@@ -46,7 +47,7 @@ const CustomerDetails: React.FC = () => {
     if (newCustomer.name && newCustomer.contact) {
       try {
         console.log('Saving customer:', newCustomer);
-        const response = await axios.post('http://localhost:5000/api/customers', newCustomer, {
+        const response = await axios.post(`${API_URL}/customers`, newCustomer, {
           headers: getAuthHeaders(),
         });
         console.log('Save response:', response.data);
@@ -71,7 +72,7 @@ const CustomerDetails: React.FC = () => {
   const handleUpdate = async () => {
     if (editingCustomer) {
       try {
-        await axios.patch(`http://localhost:5000/api/customers/${editingCustomer._id}`, editingCustomer, {
+        await axios.patch(`${API_URL}/customers/${editingCustomer._id}`, editingCustomer, {
           headers: getAuthHeaders(),
         });
         setShowEditModal(false);
@@ -86,7 +87,7 @@ const CustomerDetails: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this customer?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/customers/${id}`, {
+        await axios.delete(`${API_URL}/customers/${id}`, {
           headers: getAuthHeaders(),
         });
         fetchCustomers();

@@ -29,6 +29,13 @@ const menuItemSchema = new mongoose.Schema({
   },
   deletedAt: {
     type: Date
+  },
+  barcode: {
+    type: String,
+    unique: true,
+    sparse: true, // Allows multiple null values but ensures uniqueness for non-null values
+    trim: true,
+    index: true // Add index for fast barcode lookups
   }
 }, {
   timestamps: true

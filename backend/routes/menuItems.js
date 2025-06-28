@@ -61,19 +61,26 @@ router.get('/deleted', async (req, res) => {
 
 // Add new menu item (category or dish)
 router.post('/', async (req, res) => {
+  // Handle barcode properly - only set if provided and not empty
+  const barcodeValue = req.body.barcode && req.body.barcode.trim() !== '' ? req.body.barcode.trim() : undefined;
+
   const menuItem = new MenuItem({
     category: req.body.category,
     name: req.body.name,
     price: req.body.price,
     isVeg: req.body.isVeg,
     isAvailable: true,
-    isDeleted: false
+    isDeleted: false,
+    ...(barcodeValue && { barcode: barcodeValue }) // Only include barcode field if value exists
   });
 
   try {
     const newMenuItem = await menuItem.save();
     res.status(201).json(newMenuItem);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Barcode already exists for another item' });
+    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -107,11 +114,36 @@ router.patch('/:id', async (req, res) => {
     if (req.body.price !== undefined) menuItem.price = req.body.price;
     if (req.body.isVeg !== undefined) menuItem.isVeg = req.body.isVeg;
     if (req.body.isAvailable !== undefined) menuItem.isAvailable = req.body.isAvailable;
+    if (req.body.barcode !== undefined) {
+      // Handle barcode properly - only set if provided and not empty, otherwise unset the field
+      if (req.body.barcode && req.body.barcode.trim() !== '') {
+        menuItem.barcode = req.body.barcode.trim();
+      } else {
+        menuItem.barcode = undefined; // This will remove the field from the document
+      }
+    }
 
     const updatedMenuItem = await menuItem.save();
     res.json(updatedMenuItem);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Barcode already exists for another item' });
+    }
     res.status(400).json({ message: error.message });
+  }
+});
+
+// Clear all deleted items permanently
+router.delete('/clearDeleted', async (req, res) => {
+  try {
+    const result = await MenuItem.deleteMany({ isDeleted: true });
+    res.json({ 
+      message: `${result.deletedCount} deleted items cleared permanently`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error clearing deleted items:', error);
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -144,25 +176,111 @@ router.patch('/:id/restore', async (req, res) => {
     menuItem.isDeleted = false;
     menuItem.deletedAt = undefined;
     await menuItem.save();
-    
+
     res.json({ message: 'Menu item restored' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Clear all deleted items permanently
-router.delete('/clearDeleted', async (req, res) => {
+// Barcode scanning endpoints
+
+// Find menu item by barcode
+router.get('/barcode/:barcode', async (req, res) => {
+  console.log('GET /api/menu-items/barcode/:barcode route hit');
+  console.log('Barcode:', req.params.barcode);
   try {
-    const result = await MenuItem.deleteMany({ isDeleted: true });
-    res.json({ 
-      message: `${result.deletedCount} deleted items cleared permanently`,
-      deletedCount: result.deletedCount
+    const { barcode } = req.params;
+
+    if (!barcode || barcode.trim() === '') {
+      return res.status(400).json({ message: 'Barcode is required' });
+    }
+
+    const menuItem = await MenuItem.findOne({
+      barcode: barcode.trim(),
+      isDeleted: false,
+      isAvailable: true
+    });
+
+    if (!menuItem) {
+      console.log('No menu item found for barcode:', barcode);
+      return res.status(404).json({
+        message: 'No menu item found for this barcode',
+        barcode: barcode
+      });
+    }
+
+    console.log('Found menu item:', menuItem.name);
+    res.json({
+      success: true,
+      item: menuItem,
+      message: `Found: ${menuItem.name}`
     });
   } catch (error) {
-    console.error('Error clearing deleted items:', error);
+    console.error('Error in barcode lookup:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
-module.exports = router; 
+// Update barcode for menu item
+router.patch('/:id/barcode', async (req, res) => {
+  console.log('PATCH /api/menu-items/:id/barcode route hit');
+  try {
+    const { barcode } = req.body;
+    const menuItem = await MenuItem.findById(req.params.id);
+
+    if (!menuItem) {
+      return res.status(404).json({ message: 'Menu item not found' });
+    }
+
+    // Check if barcode already exists for another item
+    if (barcode && barcode.trim() !== '') {
+      const existingItem = await MenuItem.findOne({
+        barcode: barcode.trim(),
+        _id: { $ne: req.params.id },
+        isDeleted: false
+      });
+
+      if (existingItem) {
+        return res.status(400).json({
+          message: `Barcode already assigned to: ${existingItem.name}`
+        });
+      }
+    }
+
+    menuItem.barcode = barcode && barcode.trim() !== '' ? barcode.trim() : null;
+    const updatedMenuItem = await menuItem.save();
+
+    console.log('Updated barcode for:', menuItem.name);
+    res.json({
+      success: true,
+      item: updatedMenuItem,
+      message: `Barcode updated for ${menuItem.name}`
+    });
+  } catch (error) {
+    console.error('Error updating barcode:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Barcode already exists for another item' });
+    }
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Get all items with barcodes
+router.get('/with-barcodes', async (req, res) => {
+  console.log('GET /api/menu-items/with-barcodes route hit');
+  try {
+    const itemsWithBarcodes = await MenuItem.find({
+      barcode: { $exists: true, $ne: null, $ne: '' },
+      isDeleted: false
+    }).sort({ category: 1, name: 1 });
+
+    console.log(`Found ${itemsWithBarcodes.length} items with barcodes`);
+    res.json(itemsWithBarcodes);
+  } catch (error) {
+    console.error('Error fetching items with barcodes:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+module.exports = router;

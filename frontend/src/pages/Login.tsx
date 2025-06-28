@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { API_URL } from '../services/api';
 
 const FOOD_IMAGE_URL = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80"; // Unsplash ramen image
 const IMAGE_ATTRIBUTION = "Photo by Monika Grabkowska on Unsplash";
@@ -32,7 +33,7 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

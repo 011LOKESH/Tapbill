@@ -42,4 +42,4 @@ counterSchema.statics.initialize = async function() {
   }
 };
 
-module.exports = mongoose.model('Counter', counterSchema);
+module.exports = mongoose.model('Counter', counterSchema, 'counters');

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
+import { printReceipt, BillData, printReport, ReportData } from '@/services/printService';
 import { api, ShopDetails } from '@/services/api';
+import PrinterConfigService from '@/services/printerConfig';
 
 interface DeletedBillData {
   id: string;
@@ -157,56 +159,216 @@ const DeletedBills: React.FC = () => {
     setSelectedBills(newSelectedBills);
   };
 
+  // Generate thermal printer format PDF as backup
   const printDeletedBillsReceipt = (billsToPrint: DeletedBillData[], fileName = 'DeletedBills.pdf') => {
-    const doc = new jsPDF({ unit: 'pt', format: [300, 600 + billsToPrint.length * 20] });
-    let y = 30;
-    const lineGap = 18;
-    const addSpace = (space = 8) => { y += space; };
-    const dottedLine = () => {
-      doc.setLineDashPattern([2, 2], 0);
-      doc.line(20, y, 280, y);
-      addSpace(8);
-      doc.setLineDashPattern([], 0);
-      addSpace(6);
-    };
-    // Shop details
-    doc.setFontSize(14);
-    doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
-    addSpace(lineGap);
-    doc.setFontSize(10);
-    doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
-    addSpace(lineGap);
-    dottedLine();
-    // Table header
-    doc.setFont(undefined, 'bold');
-    doc.text('S.No', 30, y);
-    doc.text('Bill No', 65, y);
-    doc.text('Date & Time', 110, y);
-    doc.text('Tax', 190, y);
-    doc.text('Net Amt', 235, y);
-    doc.setFont(undefined, 'normal');
-    addSpace(lineGap - 2);
-    dottedLine();
-    // Table rows
-    billsToPrint.forEach((bill, idx) => {
-      doc.text(`${idx + 1}`, 30, y);
-      doc.text(String(bill.billNo), 65, y);
-      doc.text(new Date(bill.dateTime).toLocaleString(), 110, y, { maxWidth: 70 });
-      doc.text(`${bill.tax.toFixed(2)}`, 190, y);
-      doc.text(`${bill.netAmount.toFixed(2)}`, 235, y);
-      addSpace(lineGap + 5); // Increased spacing for better readability
-    });
-    dottedLine();
-    // Footer
-    doc.setFontSize(11);
-    doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
-    doc.save(fileName);
+    try {
+      // Use thermal printer format (same as home page)
+      const printerSettings = PrinterConfigService.getSettings();
+      const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+      const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+      // Validate layout before generating PDF
+      if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+        console.warn('PDF layout validation failed, using default 80mm layout');
+      }
+
+      const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+      let y = layout.topMargin;
+      const addSpace = (space = layout.lineHeight) => { y += space; };
+      const dottedLine = () => {
+        doc.setLineDashPattern([2, 2], 0);
+        doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+        addSpace(layout.sectionSpacing);
+        doc.setLineDashPattern([], 0);
+        addSpace(layout.sectionSpacing);
+      };
+
+      // Shop details
+      doc.setFontSize(layout.headerFontSize);
+      doc.text(shopDetails?.shopName || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+      addSpace();
+      doc.setFontSize(layout.subHeaderFontSize);
+      if (shopDetails?.shopAddress) {
+        doc.text(shopDetails.shopAddress, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+        addSpace();
+      }
+      if (shopDetails?.phone) {
+        doc.text(`Ph: ${shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+        addSpace();
+      }
+      dottedLine();
+
+      // Title
+      doc.setFontSize(layout.bodyFontSize);
+      doc.text('Deleted Bills Report', layout.centerX, y, { align: 'center' });
+      addSpace();
+      // Format current date and time as DD/MM/YYYY HH:MM
+      const currentDate = new Date();
+      const formattedDateTime = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth()+1).toString().padStart(2, '0')}/${currentDate.getFullYear()} ${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}`;
+      doc.text(formattedDateTime, layout.centerX, y, { align: 'center' });
+      addSpace();
+      dottedLine();
+
+      // Table headers (no S.No column) - optimized column spacing
+      doc.setFontSize(layout.itemFontSize);
+
+      // Optimized column positions for better space utilization
+      const optimizedColumns = {
+        billNo: layout.columns.item,                    // Bill# column (original position)
+        deleted: layout.columns.item + 30,              // Deleted column (reduced gap completely)
+        tax: layout.columns.price - 15,                 // Tax column (moved left)
+        total: layout.columns.total                      // Total column (original position)
+      };
+
+      doc.text('Bill#', optimizedColumns.billNo, y);
+      doc.text('Deleted', optimizedColumns.deleted, y);
+      doc.text('Tax', optimizedColumns.tax, y);
+      doc.text('Total', optimizedColumns.total, y);
+      addSpace();
+      dottedLine();
+
+      // Table rows (no S.No column) - optimized column spacing
+      billsToPrint.forEach((bill) => {
+        // Format deleted date and time as DD/MM/YYYY HH:MM
+        const deletedDate = new Date(bill.deletedAt || bill.dateTime || new Date());
+        const formattedDateTime = `${deletedDate.getDate().toString().padStart(2, '0')}/${(deletedDate.getMonth()+1).toString().padStart(2, '0')}/${deletedDate.getFullYear()} ${deletedDate.getHours().toString().padStart(2, '0')}:${deletedDate.getMinutes().toString().padStart(2, '0')}`;
+
+        // Optimized column positions for better space utilization
+        const optimizedColumns = {
+          billNo: layout.columns.item,                    // Bill# column (original position)
+          deleted: layout.columns.item + 30,              // Deleted column (reduced gap completely)
+          tax: layout.columns.price - 15,                 // Tax column (moved left)
+          total: layout.columns.total                      // Total column (original position)
+        };
+
+        doc.text(String(bill.billNo || 'N/A'), optimizedColumns.billNo, y, { maxWidth: 25 });
+
+        // Conditional date/time formatting based on printer width
+        if (layout.paperWidth <= 200) { // 58mm format - split into two lines
+          const dateOnly = formattedDateTime.substring(0, 10); // DD/MM/YYYY
+          const timeOnly = formattedDateTime.substring(11, 16); // HH:MM
+          doc.text(dateOnly, optimizedColumns.deleted, y);
+          addSpace(layout.lineHeight * 0.7);
+          doc.text(timeOnly, optimizedColumns.deleted, y);
+          addSpace(layout.lineHeight * 0.3);
+
+          // Reset y position for other columns
+          y -= layout.lineHeight;
+          doc.text(String((bill.tax || 0).toFixed(0)), optimizedColumns.tax, y);
+          doc.text(String((bill.netAmount || 0).toFixed(0)), optimizedColumns.total, y);
+        } else { // 80mm format - single line
+          const compactDateTime = `${formattedDateTime.substring(0, 10)} ${formattedDateTime.substring(11, 16)}`; // DD/MM/YYYY HH:MM
+          doc.text(compactDateTime, optimizedColumns.deleted, y, { maxWidth: 50 });
+
+          doc.text(String((bill.tax || 0).toFixed(0)), optimizedColumns.tax, y);
+          doc.text(String((bill.netAmount || 0).toFixed(0)), optimizedColumns.total, y);
+        }
+
+        // Add extra spacing between rows to prevent collision
+        addSpace(layout.lineHeight * 1.5);
+      });
+      dottedLine();
+
+      // Footer
+      doc.setFontSize(layout.bodyFontSize);
+      addSpace(layout.sectionSpacing);
+      doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+      // Save PDF with printer width in filename
+      const thermalFileName = fileName.replace('.pdf', `_${printerSettings.selectedWidth}.pdf`);
+      doc.save(thermalFileName);
+    } catch (error) {
+      console.error('Error generating thermal print PDF:', error);
+    }
   };
 
-  const handlePrint = () => {
+  const handlePrintSingle = async (bill: DeletedBillData) => {
+    // Convert single deleted bill to BillData format for direct printing (same as home page)
+    const billData: BillData = {
+      billNo: bill.billNo || 'N/A',
+      items: [{
+        name: `Deleted Bill ${bill.billNo || 'N/A'} (${bill.qty || 0} items)`,
+        quantity: 1,
+        price: bill.netAmount || 0,
+        total: bill.netAmount || 0
+      }],
+      total: bill.netAmount || 0,
+      createdAt: new Date(bill.deletedAt || new Date()),
+      shopDetails: {
+        name: shopDetails?.shopName || 'TapBill Restaurant',
+        address: shopDetails?.shopAddress || '',
+        phone: shopDetails?.phone || ''
+      }
+    };
+
+    // Try direct printing first (same as home page)
+    let printSuccess = false;
+    try {
+      printSuccess = await printReceipt(billData, { silent: true });
+    } catch (error) {
+      console.error('Direct print error:', error);
+    }
+
+    // Show success/failure message and handle PDF generation
+    const printerSettings = PrinterConfigService.getSettings();
+    if (printSuccess) {
+      // Printer connected and printing successful - no PDF needed
+      alert(`✅ Deleted bill ${bill.billNo} printed successfully (${printerSettings.selectedWidth})!`);
+    } else {
+      // Printer not connected - show error and generate PDF as backup
+      printDeletedBillsReceipt([bill], `DeletedBill_${bill.billNo || 'NA'}.pdf`);
+      alert(`⚠️ Direct printing failed. PDF saved successfully (${printerSettings.selectedWidth}). Please check your printer connection.`);
+    }
+  };
+
+  const handlePrint = async () => {
     const selected = filteredBills.filter(bill => selectedBills.has(bill.id));
-    if (selected.length === 0) return;
-    printDeletedBillsReceipt(selected, 'DeletedBills_Selected.pdf');
+    if (selected.length === 0) {
+      alert('Please select bills to print');
+      return;
+    }
+
+    // Prepare report data for direct printing
+    const reportData: ReportData = {
+      title: 'Deleted Bills Report',
+      date: new Date().toLocaleDateString(),
+      items: selected.map(bill => ({
+        'Bill#': bill.billNo || 'N/A',
+        'Items': (bill.items && bill.items.length) || 0,
+        'Qty': bill.qty || 0,
+        'Tax': `₹${(bill.tax || 0).toFixed(2)}`,
+        'Net': `₹${(bill.netAmount || 0).toFixed(2)}`,
+        'Date': bill.deletedAt ? new Date(bill.deletedAt).toLocaleDateString() : 'N/A'
+      })),
+      totals: {
+        'Total Bills': selected.length,
+        'Total Quantity': selected.reduce((sum, bill) => sum + (bill.qty || 0), 0),
+        'Total Amount': `₹${selected.reduce((sum, bill) => sum + (bill.netAmount || 0), 0).toFixed(2)}`
+      }
+    };
+
+    // Try direct printing first
+    let printSuccess = false;
+    try {
+      printSuccess = await printReport(reportData, { silent: true });
+      if (printSuccess) {
+        console.log('✅ Deleted bills report printed successfully');
+      }
+    } catch (error) {
+      console.error('Direct print error:', error);
+    }
+
+    // Show success/failure message and handle PDF generation
+    const printerSettings = PrinterConfigService.getSettings();
+    if (printSuccess) {
+      // Printer connected and printing successful - no PDF needed
+      alert(`✅ Report printed successfully (${printerSettings.selectedWidth})!`);
+    } else {
+      // Printer not connected - show error and generate PDF as backup
+      printDeletedBillsReceipt(selected, 'DeletedBills_Selected.pdf');
+      alert(`⚠️ Direct printing failed. PDF saved successfully (${printerSettings.selectedWidth}). Please check your printer connection.`);
+    }
   };
 
   const handleExport = async () => {
@@ -370,6 +532,7 @@ const DeletedBills: React.FC = () => {
                   <th className="px-6 py-3 text-center font-medium text-gray-800">Tax</th>
                   <th className="px-6 py-3 text-center font-medium text-gray-800">Qty</th>
                   <th className="px-6 py-3 text-center font-medium text-gray-800">Net Amount</th>
+                  <th className="px-6 py-3 text-center font-medium text-gray-800">Print</th>
                   <th className="px-6 py-3 text-center font-medium text-gray-800">Actions</th>
                 </tr>
               </thead>
@@ -385,12 +548,21 @@ const DeletedBills: React.FC = () => {
                       />
                     </td>
                     <td className="px-6 py-4 text-center">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                    <td className="px-6 py-4 text-center">{bill.billNo}</td>
-                    <td className="px-6 py-4 text-center">{new Date(bill.dateTime).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-center">{bill.paymentMode}</td>
-                    <td className="px-6 py-4 text-center">₹{bill.tax.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-center">{bill.qty}</td>
-                    <td className="px-6 py-4 text-center">₹{bill.netAmount.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-center">{bill.billNo || 'N/A'}</td>
+                    <td className="px-6 py-4 text-center">{bill.dateTime ? new Date(bill.dateTime).toLocaleString() : 'N/A'}</td>
+                    <td className="px-6 py-4 text-center">{bill.paymentMode || 'N/A'}</td>
+                    <td className="px-6 py-4 text-center">₹{(bill.tax || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-center">{bill.qty || 0}</td>
+                    <td className="px-6 py-4 text-center">₹{(bill.netAmount || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-center">
+                      <button
+                        onClick={() => handlePrintSingle(bill)}
+                        className="text-green-500 hover:text-green-700 p-1"
+                        title="Print this bill"
+                      >
+                        🖨️
+                      </button>
+                    </td>
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handleViewBill(bill.id)}

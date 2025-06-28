@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import { api, ShopDetails } from '@/services/api';
+import { printReport, ReportData, generateReportHTML } from '@/services/printService';
+import PrinterConfigService from '@/services/printerConfig';
 
 interface SaleData {
   id: number;
@@ -77,56 +79,129 @@ const DaySummary: React.FC = () => {
         return;
       }
 
-      const doc = new jsPDF({ unit: 'pt', format: [300, 600 + salesData.length * 20] });
-      let y = 30;
-      const lineGap = 18;
-      const addSpace = (space = 8) => { y += space; };
+      // Prepare report data for direct printing
+      const reportData: ReportData = {
+        title: 'Day Summary Report',
+        date: new Date().toLocaleDateString(),
+        items: salesData.map((sale, index) => ({
+          'S.No': index + 1,
+          'Date': sale.date,
+          'Bills': sale.numberOfBills,
+          'Tax': `₹${sale.tax.toFixed(2)}`,
+          'Amount': `₹${sale.totalSale.toFixed(2)}`
+        })),
+        totals: {
+          'Total Days': salesData.length,
+          'Total Bills': salesData.reduce((sum, sale) => sum + sale.numberOfBills, 0),
+          'Total Tax': `₹${salesData.reduce((sum, sale) => sum + sale.tax, 0).toFixed(2)}`,
+          'Total Amount': `₹${salesData.reduce((sum, sale) => sum + sale.totalSale, 0).toFixed(2)}`
+        },
+        shopDetails: {
+          name: shopDetails?.shopName || 'TapBill Restaurant',
+          address: shopDetails?.shopAddress || '',
+          phone: shopDetails?.phone || ''
+        }
+      };
+
+      // Try direct printing first
+      let printSuccess = false;
+      try {
+        printSuccess = await printReport(reportData, { silent: true });
+        if (printSuccess) {
+          console.log('✅ Day summary report printed successfully');
+        }
+      } catch (error) {
+        console.error('Direct print error:', error);
+      }
+
+      // Generate thermal printer format PDF as backup (same as home page)
+      const printerSettings = PrinterConfigService.getSettings();
+      const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+      const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+      // Validate layout before generating PDF
+      if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+        console.warn('PDF layout validation failed, using default 80mm layout');
+      }
+
+      const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+      let y = layout.topMargin;
+      const addSpace = (space = layout.lineHeight) => { y += space; };
       const dottedLine = () => {
         doc.setLineDashPattern([2, 2], 0);
-        doc.line(20, y, 280, y);
-        addSpace(8);
+        doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+        addSpace(layout.sectionSpacing);
         doc.setLineDashPattern([], 0);
-        addSpace(6);
+        addSpace(layout.sectionSpacing);
       };
-      
+
       // Shop details
-      doc.setFontSize(14);
-      doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
-      addSpace(lineGap);
-      doc.setFontSize(10);
-      doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
-      addSpace(lineGap);
+      doc.setFontSize(layout.headerFontSize);
+      doc.text(shopDetails?.shopName || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+      addSpace();
+      doc.setFontSize(layout.subHeaderFontSize);
+      if (shopDetails?.shopAddress) {
+        doc.text(shopDetails.shopAddress, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+        addSpace();
+      }
+      if (shopDetails?.phone) {
+        doc.text(`Ph: ${shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+        addSpace();
+      }
       dottedLine();
-      
-      // Table header
-      doc.setFont(undefined, 'bold');
-      doc.text('S.No', 30, y);
-      doc.text('Date', 65, y);
-      doc.text('No of Bills', 130, y);
-      doc.text('Tax', 200, y);
-      doc.text('Total Sales', 245, y);
-      doc.setFont(undefined, 'normal');
-      addSpace(lineGap - 2);
+
+      // Title
+      doc.setFontSize(layout.bodyFontSize);
+      doc.text('Day Summary Report', layout.centerX, y, { align: 'center' });
+      addSpace();
+      // Format current date and time as DD/MM/YYYY HH:MM
+      const currentDate = new Date();
+      const formattedDateTime = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth()+1).toString().padStart(2, '0')}/${currentDate.getFullYear()} ${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}`;
+      doc.text(formattedDateTime, layout.centerX, y, { align: 'center' });
+      addSpace();
       dottedLine();
-      
-      // Table rows
-      salesData.forEach((sale, idx) => {
-        doc.text(`${idx + 1}`, 30, y);
-        doc.text(sale.date, 65, y);
-        doc.text(`${sale.numberOfBills}`, 130, y);
-        doc.text(`${sale.tax.toFixed(2)}`, 200, y);
-        doc.text(`${sale.totalSale.toFixed(2)}`, 245, y);
-        addSpace(lineGap + 5); // Increased spacing for better readability
+
+      // Table headers (no S.No column)
+      doc.setFontSize(layout.itemFontSize);
+      doc.text('Date', layout.columns.item, y);
+      doc.text('Bills', layout.columns.qty, y);
+      doc.text('Tax', layout.columns.price, y);
+      doc.text('Total', layout.columns.total, y);
+      addSpace();
+      dottedLine();
+
+      // Table rows (no S.No column)
+      salesData.forEach((sale) => {
+        // Format date as DD/MM/YYYY
+        const saleDate = new Date(sale.date);
+        const formattedDate = `${saleDate.getDate().toString().padStart(2, '0')}/${(saleDate.getMonth()+1).toString().padStart(2, '0')}/${saleDate.getFullYear()}`;
+        doc.text(formattedDate, layout.columns.item, y, { maxWidth: layout.columnWidths.item });
+        doc.text(String(sale.numberOfBills), layout.columns.qty, y);
+        doc.text(String(sale.tax.toFixed(0)), layout.columns.price, y);
+        doc.text(String(sale.totalSale.toFixed(0)), layout.columns.total, y);
+        addSpace();
       });
       dottedLine();
-      
+
       // Footer
-      doc.setFontSize(11);
-      doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
-      doc.save(fileName);
+      doc.setFontSize(layout.bodyFontSize);
+      addSpace(layout.sectionSpacing);
+      doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+      // Save PDF with printer width in filename
+      const thermalFileName = fileName.replace('.pdf', `_${printerSettings.selectedWidth}.pdf`);
+      doc.save(thermalFileName);
+
+      // Show result message
+      if (printSuccess) {
+        alert(`✅ Day summary printed successfully (${printerSettings.selectedWidth})! PDF also saved as backup.`);
+      } else {
+        alert(`⚠️ Direct printing failed. PDF saved successfully (${printerSettings.selectedWidth}). Please check your printer connection.`);
+      }
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      console.error('Error generating day summary:', error);
+      alert('Error generating day summary. Please try again.');
     }
   };
 

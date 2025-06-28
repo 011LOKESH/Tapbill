@@ -3,8 +3,8 @@ import { BillItem } from '@/services/api';
 
 interface BillDisplayProps {
   items: BillItem[];
-  onUpdateQuantity: (id: string, quantity: number) => void;
-  onDeleteItem: (id: string) => void;
+  onUpdateQuantity: (id: number, quantity: number) => void;
+  onDeleteItem: (id: number) => void;
   onClearBill: () => void;
 }
 

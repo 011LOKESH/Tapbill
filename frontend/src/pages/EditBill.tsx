@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import BillDetailsModal from '@/components/tapbill/BillDetailsModal'; // Import the modal component
 import DateFilterModal from '@/components/tapbill/DateFilterModal'; // Import the date filter modal
 import { BillItem, api, Customer, ShopDetails } from '@/services/api'; // Adjust the import based on your structure
+import { printReceipt, BillData, generateReceiptHTML } from '@/services/printService';
+import PrinterConfigService from '@/services/printerConfig';
 import jsPDF from 'jspdf';
 
 const getAuthHeaders = () => {
@@ -28,13 +30,7 @@ const EditBill: React.FC = () => {
   useEffect(() => {
     const fetchBills = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/bill-items', {
-          headers: getAuthHeaders(),
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch bills');
-        }
-        const data = await response.json();
+        const data = await api.getBillItems();
         setBills(data);
         setFilteredBills(data); // Initialize filtered bills with all bills
       } catch (error) {
@@ -114,13 +110,80 @@ const EditBill: React.FC = () => {
     setSelectedBills(newSelectedBills);
   };
 
-  const handlePrintSelected = () => {
-    // Print all selected bills
-    filteredBills.forEach((bill) => {
-      if (selectedBills.has(bill._id)) {
-        handlePrintBill(bill);
+  const handlePrintSelected = async () => {
+    const selectedBillsList = filteredBills.filter(bill => selectedBills.has(bill._id));
+    if (selectedBillsList.length === 0) {
+      alert('Please select bills to print');
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    // Print each selected bill with direct printing + PDF backup
+    for (const bill of selectedBillsList) {
+      const success = await handlePrintBillWithDirectPrint(bill);
+      if (success) successCount++;
+      else failCount++;
+    }
+
+    // Show summary message
+    if (successCount > 0 && failCount === 0) {
+      alert(`✅ All ${successCount} bills printed successfully! PDFs also saved as backup.`);
+    } else if (successCount > 0 && failCount > 0) {
+      alert(`⚠️ ${successCount} bills printed successfully, ${failCount} failed. All PDFs saved.`);
+    } else {
+      alert(`⚠️ Direct printing failed for all bills. PDFs saved successfully.`);
+    }
+  };
+
+  const handlePrintBillWithDirectPrint = async (bill: any): Promise<boolean> => {
+    try {
+      // Prepare bill data for direct printing
+      const printBillData: BillData = {
+        billNo: bill.billNo || 'NA',
+        items: bill.items.map((item: any) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.price * item.quantity
+        })),
+        total: bill.total,
+        createdAt: bill.createdAt,
+        shopDetails: {
+          name: shopDetails?.shopName || 'TapBill Restaurant',
+          address: shopDetails?.shopAddress || '',
+          phone: shopDetails?.phone || ''
+        }
+      };
+
+      // Try direct printing first
+      let printSuccess = false;
+      try {
+        printSuccess = await printReceipt(printBillData, { silent: true });
+        if (printSuccess) {
+          console.log(`✅ Bill ${bill.billNo} printed successfully to printer`);
+        }
+      } catch (error) {
+        console.error('Direct print error:', error);
       }
-    });
+
+      // Show success/failure message and handle PDF generation
+      const printerSettings = PrinterConfigService.getSettings();
+      if (printSuccess) {
+        // Printer connected and printing successful - no PDF needed
+        alert(`✅ Bill printed successfully (${printerSettings.selectedWidth})!`);
+      } else {
+        // Printer not connected - show error and generate PDF as backup
+        generateThermalPrintPDF(printBillData);
+        alert(`⚠️ Direct printing failed. PDF saved successfully (${printerSettings.selectedWidth}). Please check your printer connection.`);
+      }
+
+      return printSuccess;
+    } catch (error) {
+      console.error('Print error for bill:', bill.billNo, error);
+      return false;
+    }
   };
 
   const handleDeleteSelected = async () => {
@@ -155,70 +218,106 @@ const EditBill: React.FC = () => {
     return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const handlePrintBill = (bill: any) => {
-    const doc = new jsPDF({ unit: 'pt', format: [300, 600] });
-    let y = 30;
-    const lineGap = 18;
-    const addSpace = (space = 8) => { y += space; };
-    const dottedLine = () => {
-      doc.setLineDashPattern([2, 2], 0);
-      doc.line(20, y, 280, y);
-      addSpace(8);
-      doc.setLineDashPattern([], 0);
-      addSpace(6);
-    };
-    // Shop details
-    doc.setFontSize(14);
-    doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
-    addSpace(lineGap);
-    doc.setFontSize(10);
-    doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
-    addSpace(lineGap);
-    dottedLine();
-    // Customer details (not available in bill, so show dash)
-    doc.setFontSize(10);
-    doc.text(`Customer: -`, 30, y);
-    doc.text(`Phone: -`, 170, y);
-    addSpace(lineGap);
-    dottedLine();
-    // Bill info
-    doc.text(`Bill No: ${bill.billNo || '-'}`, 30, y);
-    doc.text(`Date: ${formatDateTime(bill.createdAt)}`, 170, y);
-    addSpace(lineGap);
-    dottedLine();
-    // Table header
-    doc.setFont(undefined, 'bold');
-    doc.text('S.No', 30, y);
-    doc.text('Item', 65, y);
-    doc.text('Qty', 160, y);
-    doc.text('Price', 200, y);
-    doc.text('Amt', 245, y);
-    doc.setFont(undefined, 'normal');
-    addSpace(lineGap - 2);
-    dottedLine();
-    // Table rows
-    bill.items.forEach((item: any, idx: number) => {
-      doc.text(`${idx + 1}`, 30, y);
-      doc.text(item.name, 65, y, { maxWidth: 90 });
-      doc.text(`${item.quantity}`, 160, y);
-      doc.text(`${item.price.toFixed(2)}`, 200, y);
-      doc.text(`${(item.price * item.quantity).toFixed(2)}`, 245, y);
-      addSpace(lineGap - 2);
-    });
-    dottedLine();
-    // Totals
-    const totalQty = bill.items.reduce((sum: number, i: any) => sum + i.quantity, 0);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Total Qty: ${totalQty}`, 30, y);
-    doc.text(`Total: ₹${bill.total.toFixed(2)}`, 170, y); // No superscript or formatting
-    doc.setFont(undefined, 'normal');
-    addSpace(lineGap);
-    dottedLine();
-    // Footer
-    doc.setFontSize(11);
-    doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
-    // Only download PDF (no print, no new tab)
-    doc.save(`Bill_${bill.billNo || 'NA'}.pdf`);
+  // Generate thermal printer format PDF as backup (same as home page)
+  const generateThermalPrintPDF = (billData: BillData) => {
+    try {
+      // Use the exact same PDF generation as home page
+      const printerSettings = PrinterConfigService.getSettings();
+      const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+      const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+      // Validate layout before generating PDF
+      if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+        console.warn('PDF layout validation failed, using default 80mm layout');
+      }
+
+      const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+      let y = layout.topMargin;
+      const addSpace = (space = layout.lineHeight) => { y += space; };
+      const dottedLine = () => {
+        doc.setLineDashPattern([2, 2], 0);
+        doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+        addSpace(layout.sectionSpacing);
+        doc.setLineDashPattern([], 0);
+        addSpace(layout.sectionSpacing);
+      };
+
+      // Shop details
+      doc.setFontSize(layout.headerFontSize);
+      doc.text(billData.shopDetails?.name || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+      addSpace();
+      doc.setFontSize(layout.subHeaderFontSize);
+      if (billData.shopDetails?.address) {
+        doc.text(billData.shopDetails.address, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+        addSpace();
+      }
+      if (billData.shopDetails?.phone) {
+        doc.text(`Ph: ${billData.shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+        addSpace();
+      }
+      dottedLine();
+
+      // Bill info (stack vertically for both 58mm and 80mm to prevent cutoff)
+      doc.setFontSize(layout.bodyFontSize);
+      doc.text(`Bill No: ${billData.billNo}`, layout.leftMargin, y);
+      addSpace();
+      // Format date and time as DD/MM/YYYY HH:MM
+      const billDate = new Date(billData.createdAt);
+      const formattedDateTime = `${billDate.getDate().toString().padStart(2, '0')}/${(billDate.getMonth()+1).toString().padStart(2, '0')}/${billDate.getFullYear()} ${billDate.getHours().toString().padStart(2, '0')}:${billDate.getMinutes().toString().padStart(2, '0')}`;
+      doc.text(`Date: ${formattedDateTime}`, layout.leftMargin, y);
+      addSpace();
+      dottedLine();
+
+      // Table header (no S.No column)
+      doc.setFontSize(layout.itemFontSize);
+      doc.setFont(undefined, 'bold');
+      doc.text('Item', layout.columns.item, y);
+      doc.text('Qty', layout.columns.qty, y);
+      doc.text('Price', layout.columns.price, y);
+      doc.text('Total', layout.columns.total, y);
+      doc.setFont(undefined, 'normal');
+      addSpace(layout.sectionSpacing);
+      dottedLine();
+
+      // Table rows (no S.No column)
+      billData.items.forEach((item) => {
+        doc.text(item.name, layout.columns.item, y, { maxWidth: layout.columnWidths.item });
+        doc.text(String(item.quantity), layout.columns.qty, y);
+        doc.text(String(item.price.toFixed(2)), layout.columns.price, y);
+        doc.text(String((item.price * item.quantity).toFixed(2)), layout.columns.total, y);
+        addSpace(layout.lineHeight);
+      });
+      dottedLine();
+
+      // Totals (match home page format exactly)
+      const totalQty = billData.items.reduce((sum, item) => sum + item.quantity, 0);
+      doc.setFontSize(layout.totalFontSize);
+      doc.setFont(undefined, 'bold');
+      // Stack vertically for both layouts to ensure proper positioning
+      doc.text(`Total Qty: ${String(totalQty)}`, layout.leftMargin, y);
+      addSpace();
+      doc.text(`Total: Rs.${String(billData.total.toFixed(2))}`, layout.leftMargin, y);
+      addSpace();
+      doc.setFont(undefined, 'normal');
+      dottedLine();
+
+      // Footer (match home page format exactly)
+      doc.setFontSize(layout.bodyFontSize);
+      addSpace(layout.sectionSpacing);
+      doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+      // Save PDF with printer width in filename
+      const fileName = `Bill_${billData.billNo}_${printerSettings.selectedWidth}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Error generating thermal print PDF:', error);
+    }
+  };
+
+  // Legacy function for individual bill printing (now uses thermal format)
+  const handlePrintBill = async (bill: any) => {
+    await handlePrintBillWithDirectPrint(bill);
   };
 
   return (
@@ -354,9 +453,9 @@ const EditBill: React.FC = () => {
                         View
                       </button>
                       <button
-                        onClick={() => handlePrintBill(bill)}
+                        onClick={() => handlePrintBillWithDirectPrint(bill)}
                         className="inline-flex items-center justify-center bg-gray-100 hover:bg-[rgb(56,224,120)] text-gray-700 hover:text-white rounded-full p-2 transition-colors"
-                        title="Print"
+                        title="Print (Direct + PDF)"
                         aria-label="Print Bill"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

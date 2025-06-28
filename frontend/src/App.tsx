@@ -2,7 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CustomerDetails from "./pages/CustomerDetails";
@@ -15,6 +20,7 @@ import DeletedBills from "./pages/DeletedBills";
 import DeletedBillDetails from './pages/DeletedBillDetails';
 import CustomizeMenu from './pages/CustomizeMenu';
 import ExportAndDelete from './pages/ExportAndDelete';
+import PrintSettings from './pages/PrintSettings';
 import DeletedItems from './pages/DeletedItems';
 import Login from './pages/Login';
 import UserDetails from './pages/UserDetails';
@@ -44,10 +50,11 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={
+          <Route path="/" element={<Navigate to="/billing" />} />
+          <Route path="/billing" element={
             <ProtectedRoute>
               <Index />
             </ProtectedRoute>
@@ -102,6 +109,11 @@ const App = () => (
               <CustomizeMenu />
             </ProtectedRoute>
           } />
+          <Route path="/print-settings" element={
+            <ProtectedRoute>
+              <PrintSettings />
+            </ProtectedRoute>
+          } />
           <Route path="/export-and-delete" element={
             <ProtectedRoute>
               <ExportAndDelete />
@@ -124,7 +136,7 @@ const App = () => (
           } />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import { api, ShopDetails } from '@/services/api';
+import { printReport, ReportData } from '@/services/printService';
+import PrinterConfigService from '@/services/printerConfig';
 
 interface SaleData {
   id: number;
@@ -55,10 +57,10 @@ const Report: React.FC = () => {
         navigate('/deleted-bills');
         break;
       case 'day-sales':
-        printDaySalesReceipt('DaySales.pdf');
+        printDaySalesReceiptWithDirectPrint('DaySales.pdf');
         break;
       case 'bill-sales-print':
-        printBillSalesReceipt('BillSales.pdf');
+        printBillSalesReceiptWithDirectPrint('BillSales.pdf');
         break;
       case 'user-report':
         navigate('/user-details');
@@ -101,6 +103,57 @@ const Report: React.FC = () => {
     }
   };
 
+  const printDaySalesReceiptWithDirectPrint = async (fileName = 'DaySales.pdf') => {
+    try {
+      const salesData = await fetchDailySales();
+      if (salesData.length === 0) {
+        alert('No sales data available');
+        return;
+      }
+
+      // Prepare report data for direct printing
+      const reportData: ReportData = {
+        title: 'Day Sales Summary',
+        date: new Date().toLocaleDateString(),
+        items: salesData.map(sale => ({
+          'Date': sale.date || 'N/A',
+          'Bills': sale.numberOfBills || 0,
+          'Tax': `₹${(sale.tax || 0).toFixed(2)}`,
+          'Amount': `₹${(sale.totalSale || 0).toFixed(2)}`
+        })),
+        totals: {
+          'Total Days': salesData.length,
+          'Total Bills': salesData.reduce((sum, sale) => sum + (sale.numberOfBills || 0), 0),
+          'Total Amount': `₹${salesData.reduce((sum, sale) => sum + (sale.totalSale || 0), 0).toFixed(2)}`
+        }
+      };
+
+      // Try direct printing first
+      let printSuccess = false;
+      try {
+        printSuccess = await printReport(reportData, { silent: true });
+        if (printSuccess) {
+          console.log('✅ Day sales report printed successfully');
+        }
+      } catch (error) {
+        console.error('Direct print error:', error);
+      }
+
+      // Always generate PDF as backup
+      printDaySalesReceipt(fileName);
+
+      // Show result message
+      if (printSuccess) {
+        alert('✅ Day sales report printed successfully! PDF also saved as backup.');
+      } else {
+        alert('⚠️ Direct printing failed. PDF saved successfully.');
+      }
+    } catch (error) {
+      console.error('Error in day sales print:', error);
+      alert('Error generating day sales report');
+    }
+  };
+
   const printDaySalesReceipt = async (fileName = 'DaySales.pdf') => {
     try {
       const salesData = await fetchDailySales();
@@ -109,53 +162,84 @@ const Report: React.FC = () => {
         return;
       }
 
-      const doc = new jsPDF({ unit: 'pt', format: [300, 600 + salesData.length * 20] });
-      let y = 30;
-      const lineGap = 18;
-      const addSpace = (space = 8) => { y += space; };
+      // Use thermal printer format (same as home page)
+      const printerSettings = PrinterConfigService.getSettings();
+      const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+      const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+      // Validate layout before generating PDF
+      if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+        console.warn('PDF layout validation failed, using default 80mm layout');
+      }
+
+      const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+      let y = layout.topMargin;
+      const addSpace = (space = layout.lineHeight) => { y += space; };
       const dottedLine = () => {
         doc.setLineDashPattern([2, 2], 0);
-        doc.line(20, y, 280, y);
-        addSpace(8);
+        doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+        addSpace(layout.sectionSpacing);
         doc.setLineDashPattern([], 0);
-        addSpace(6);
+        addSpace(layout.sectionSpacing);
       };
-      
+
       // Shop details
-      doc.setFontSize(14);
-      doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
-      addSpace(lineGap);
-      doc.setFontSize(10);
-      doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
-      addSpace(lineGap);
+      doc.setFontSize(layout.headerFontSize);
+      doc.text(shopDetails?.shopName || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+      addSpace();
+      doc.setFontSize(layout.subHeaderFontSize);
+      if (shopDetails?.shopAddress) {
+        doc.text(shopDetails.shopAddress, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+        addSpace();
+      }
+      if (shopDetails?.phone) {
+        doc.text(`Ph: ${shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+        addSpace();
+      }
       dottedLine();
-      
-      // Table header
-      doc.setFont(undefined, 'bold');
-      doc.text('S.No', 30, y);
-      doc.text('Date', 65, y);
-      doc.text('No of Bills', 130, y);
-      doc.text('Tax', 200, y);
-      doc.text('Total Sales', 245, y);
-      doc.setFont(undefined, 'normal');
-      addSpace(lineGap - 2);
+
+      // Title
+      doc.setFontSize(layout.bodyFontSize);
+      doc.text('Day Sales Report', layout.centerX, y, { align: 'center' });
+      addSpace();
+      // Format current date and time as DD/MM/YYYY HH:MM
+      const currentDate = new Date();
+      const formattedDateTime = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth()+1).toString().padStart(2, '0')}/${currentDate.getFullYear()} ${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}`;
+      doc.text(formattedDateTime, layout.centerX, y, { align: 'center' });
+      addSpace();
       dottedLine();
-      
-      // Table rows
-      salesData.forEach((sale, idx) => {
-        doc.text(`${idx + 1}`, 30, y);
-        doc.text(sale.date, 65, y);
-        doc.text(`${sale.numberOfBills}`, 130, y);
-        doc.text(`${sale.tax.toFixed(2)}`, 200, y);
-        doc.text(`${sale.totalSale.toFixed(2)}`, 245, y);
-        addSpace(lineGap + 5); // Increased spacing for better readability
+
+      // Table headers (no S.No column)
+      doc.setFontSize(layout.itemFontSize);
+      doc.text('Date', layout.columns.item, y);
+      doc.text('Bills', layout.columns.qty, y);
+      doc.text('Tax', layout.columns.price, y);
+      doc.text('Total', layout.columns.total, y);
+      addSpace();
+      dottedLine();
+
+      // Table rows (no S.No column)
+      salesData.forEach((sale) => {
+        // Format date as DD/MM/YYYY
+        const saleDate = new Date(sale.date);
+        const formattedDate = `${saleDate.getDate().toString().padStart(2, '0')}/${(saleDate.getMonth()+1).toString().padStart(2, '0')}/${saleDate.getFullYear()}`;
+        doc.text(formattedDate, layout.columns.item, y, { maxWidth: layout.columnWidths.item });
+        doc.text(String(sale.numberOfBills), layout.columns.qty, y);
+        doc.text(String(sale.tax.toFixed(0)), layout.columns.price, y);
+        doc.text(String(sale.totalSale.toFixed(0)), layout.columns.total, y);
+        addSpace();
       });
       dottedLine();
-      
+
       // Footer
-      doc.setFontSize(11);
-      doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
-      doc.save(fileName);
+      doc.setFontSize(layout.bodyFontSize);
+      addSpace(layout.sectionSpacing);
+      doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+      // Save PDF with printer width in filename
+      const thermalFileName = fileName.replace('.pdf', `_${printerSettings.selectedWidth}.pdf`);
+      doc.save(thermalFileName);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');
@@ -186,6 +270,58 @@ const Report: React.FC = () => {
     }
   };
 
+  const printBillSalesReceiptWithDirectPrint = async (fileName = 'BillSales.pdf') => {
+    try {
+      const bills = await fetchTodayBills();
+      if (bills.length === 0) {
+        alert('No bills available for today');
+        return;
+      }
+
+      // Prepare report data for direct printing
+      const reportData: ReportData = {
+        title: 'Bill Sales Summary',
+        date: new Date().toLocaleDateString(),
+        items: bills.map(bill => ({
+          'Bill#': bill.billNo,
+          'Date': new Date(bill.createdAt).toLocaleDateString(),
+          'Items': bill.items.length,
+          'Qty': bill.items.reduce((sum, item) => sum + item.quantity, 0),
+          'Amount': `₹${bill.total.toFixed(2)}`
+        })),
+        totals: {
+          'Total Bills': bills.length,
+          'Total Quantity': bills.reduce((sum, bill) => sum + bill.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0),
+          'Total Amount': `₹${bills.reduce((sum, bill) => sum + bill.total, 0).toFixed(2)}`
+        }
+      };
+
+      // Try direct printing first
+      let printSuccess = false;
+      try {
+        printSuccess = await printReport(reportData, { silent: true });
+        if (printSuccess) {
+          console.log('✅ Bill sales report printed successfully');
+        }
+      } catch (error) {
+        console.error('Direct print error:', error);
+      }
+
+      // Always generate PDF as backup
+      printBillSalesReceipt(fileName);
+
+      // Show result message
+      if (printSuccess) {
+        alert('✅ Bill sales report printed successfully! PDF also saved as backup.');
+      } else {
+        alert('⚠️ Direct printing failed. PDF saved successfully.');
+      }
+    } catch (error) {
+      console.error('Error in bill sales print:', error);
+      alert('Error generating bill sales report');
+    }
+  };
+
   const printBillSalesReceipt = async (fileName = 'BillSales.pdf') => {
     try {
       const bills = await fetchTodayBills();
@@ -194,60 +330,112 @@ const Report: React.FC = () => {
         return;
       }
 
-      const doc = new jsPDF({ unit: 'pt', format: [300, 600 + bills.length * 25] });
-      let y = 30;
-      const lineGap = 18;
-      const addSpace = (space = 8) => { y += space; };
+      // Use thermal printer format (same as home page)
+      const printerSettings = PrinterConfigService.getSettings();
+      const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+      const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+      // Validate layout before generating PDF
+      if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+        console.warn('PDF layout validation failed, using default 80mm layout');
+      }
+
+      const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+      let y = layout.topMargin;
+      const addSpace = (space = layout.lineHeight) => { y += space; };
       const dottedLine = () => {
         doc.setLineDashPattern([2, 2], 0);
-        doc.line(20, y, 280, y);
-        addSpace(8);
+        doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+        addSpace(layout.sectionSpacing);
         doc.setLineDashPattern([], 0);
-        addSpace(6);
+        addSpace(layout.sectionSpacing);
       };
-      
+
       // Shop details
-      doc.setFontSize(14);
-      doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
-      addSpace(lineGap);
-      doc.setFontSize(10);
-      doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
-      addSpace(lineGap);
+      doc.setFontSize(layout.headerFontSize);
+      doc.text(shopDetails?.shopName || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+      addSpace();
+      doc.setFontSize(layout.subHeaderFontSize);
+      if (shopDetails?.shopAddress) {
+        doc.text(shopDetails.shopAddress, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+        addSpace();
+      }
+      if (shopDetails?.phone) {
+        doc.text(`Ph: ${shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+        addSpace();
+      }
       dottedLine();
-      
-      // Table header
-      doc.setFont(undefined, 'bold');
-      doc.text('S.No', 30, y);
-      doc.text('Bill No', 65, y);
-      doc.text('Time', 120, y);
-      doc.text('Items', 180, y);
-      doc.text('Total', 245, y);
-      doc.setFont(undefined, 'normal');
-      addSpace(lineGap - 2);
+
+      // Title
+      doc.setFontSize(layout.bodyFontSize);
+      doc.text('Bill Sales Report', layout.centerX, y, { align: 'center' });
+      addSpace();
+      // Format current date and time as DD/MM/YYYY HH:MM
+      const currentDate = new Date();
+      const formattedDateTime = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth()+1).toString().padStart(2, '0')}/${currentDate.getFullYear()} ${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}`;
+      doc.text(formattedDateTime, layout.centerX, y, { align: 'center' });
+      addSpace();
       dottedLine();
-      
-      // Table rows
-      bills.forEach((bill, idx) => {
-        const time = new Date(bill.createdAt).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: true 
-        });
+
+      // Table headers (no S.No column) - optimized column spacing
+      doc.setFontSize(layout.itemFontSize);
+
+      // Optimized column positions for better space utilization (same as BillWiseSales.tsx)
+      const optimizedColumns = {
+        billNo: layout.columns.item,                    // Bill# column (original position)
+        dateTime: layout.columns.item + 35,             // Date/Time column (reduced gap from qty column)
+        items: layout.columns.price - 10,               // Items column (moved left slightly)
+        total: layout.columns.total                      // Total column (original position)
+      };
+
+      doc.text('Bill#', optimizedColumns.billNo, y);
+      doc.text('Date/Time', optimizedColumns.dateTime, y);
+      doc.text('Items', optimizedColumns.items, y);
+      doc.text('Total', optimizedColumns.total, y);
+      addSpace();
+      dottedLine();
+
+      // Table rows (no S.No column) - optimized column spacing
+      bills.forEach((bill) => {
+        // Format date and time as DD/MM/YYYY HH:MM
+        const billDate = new Date(bill.createdAt);
+        const formattedDateTime = `${billDate.getDate().toString().padStart(2, '0')}/${(billDate.getMonth()+1).toString().padStart(2, '0')}/${billDate.getFullYear()} ${billDate.getHours().toString().padStart(2, '0')}:${billDate.getMinutes().toString().padStart(2, '0')}`;
         const itemCount = bill.items.length;
-        
-        doc.text(`${idx + 1}`, 30, y);
-        doc.text(String(bill.billNo), 65, y);
-        doc.text(time, 120, y);
-        doc.text(`${itemCount}`, 180, y);
-        doc.text(`${bill.total.toFixed(2)}`, 245, y);
-        addSpace(lineGap + 5);
+
+        // Use shorter bill number to prevent overlap
+        const shortBillNo = String(bill.billNo).substring(0, 6);
+
+        // Optimized column positions for better space utilization (same as BillWiseSales.tsx)
+        const optimizedColumns = {
+          billNo: layout.columns.item,                    // Bill# column (original position)
+          dateTime: layout.columns.item + 35,             // Date/Time column (reduced gap from qty column)
+          items: layout.columns.price - 10,               // Items column (moved left slightly)
+          total: layout.columns.total                      // Total column (original position)
+        };
+
+        doc.text(shortBillNo, optimizedColumns.billNo, y, { maxWidth: 30 });
+
+        // Use compact single-line format for date/time
+        const compactDateTime = `${formattedDateTime.substring(0, 10)} ${formattedDateTime.substring(11, 16)}`; // DD/MM/YYYY HH:MM
+        doc.text(compactDateTime, optimizedColumns.dateTime, y, { maxWidth: 45 });
+
+        doc.text(String(itemCount), optimizedColumns.items, y);
+        doc.text(String(bill.total.toFixed(0)), optimizedColumns.total, y);
+
+        // Add extra spacing between rows to prevent collision
+        addSpace(layout.lineHeight * 1.5);
       });
       dottedLine();
-      
+
       // Footer
-      doc.setFontSize(11);
-      doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
-      doc.save(fileName);
+      doc.setFontSize(layout.bodyFontSize);
+      addSpace(layout.sectionSpacing);
+      doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+      // Save PDF with printer width in filename
+      const thermalFileName = fileName.replace('.pdf', `_${printerSettings.selectedWidth}.pdf`);
+      doc.save(thermalFileName);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try again.');

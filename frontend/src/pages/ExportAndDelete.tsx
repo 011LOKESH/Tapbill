@@ -8,6 +8,7 @@ interface DataItem {
   type: 'daySummary' | 'billSales' | 'deletedItems' | 'deletedBill';
   title: string;
   description: string;
+  headers: string[];
 }
 
 interface DateRange {
@@ -15,6 +16,12 @@ interface DateRange {
   startTime: string;
   endDate: string;
   endTime: string;
+}
+
+// Helper function to get auth headers (same as in api.ts)
+function getAuthHeaders() {
+  const token = JSON.parse(localStorage.getItem('userSession') || 'null')?.token;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
 const ExportAndDelete: React.FC = () => {
@@ -39,7 +46,12 @@ const ExportAndDelete: React.FC = () => {
   useEffect(() => {
     const fetchStorageInfo = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/export/storageInfo');
+        const response = await fetch('http://localhost:5000/api/export/storageInfo', {
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json',
+          },
+        });
         if (!response.ok) throw new Error('Failed to fetch storage info');
         const data = await response.json();
         setStorageInfo(data);
@@ -57,24 +69,28 @@ const ExportAndDelete: React.FC = () => {
       type: 'daySummary',
       title: 'Day Summary',
       description: 'A brief breakdown of daily transactions.',
+      headers: ['Date', 'Number of Bills', 'Tax', 'Total Sales'],
     },
     {
       id: 'billSales',
       type: 'billSales',
       title: 'Bill Sales',
       description: 'Analyze bill trends and patterns.',
+      headers: ['Bill No', 'Date', 'Payment Mode', 'Items', 'Tax', 'Total Amount'],
     },
     {
       id: 'deletedItems',
       type: 'deletedItems',
       title: 'Deleted Items',
       description: 'Overview of removed products from the inventory.',
+      headers: ['Item Name', 'Category', 'Price', 'Deleted At'],
     },
     {
       id: 'deletedBill',
       type: 'deletedBill',
       title: 'Deleted Bill',
       description: 'Details of bills that have been deleted.',
+      headers: ['Bill No', 'Date & Time', 'Payment Mode', 'Quantity', 'Net Amount', 'Deleted At'],
     },
   ];
 
@@ -112,39 +128,102 @@ const ExportAndDelete: React.FC = () => {
     
     for (const itemId of selectedItems) {
       try {
-        // Map the itemId to the correct endpoint
-        const endpointMap: Record<string, string> = {
-          'daySummary': '/api/export/daySummary',
-          'billSales': '/api/export/billSales',
-          'deletedItems': '/api/export/deletedItems',
-          'deletedBill': '/api/export/deletedBill'
-        };
-
-        const endpoint = endpointMap[itemId];
-        if (!endpoint) {
-          console.warn(`No endpoint found for ${itemId}`);
-          continue;
-        }
-
-        const response = await fetch(`http://localhost:5000${endpoint}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            dateRange: selectedDate === 'custom' ? dateRange : undefined,
-            dateType: selectedDate
-          })
-        });
-        
-        if (!response.ok) throw new Error('Failed to fetch data');
-        
-        const responseData = await response.json();
-        if (Array.isArray(responseData) && responseData.length > 0) {
-          data[itemId] = responseData;
-        } else {
-          console.warn(`No data found for ${itemId}`);
-          data[itemId] = [];
+        if (itemId === 'billSales') {
+          // For billSales, we can use the existing endpoint with dateRange
+          const response = await fetch(`http://localhost:5000/api/export/billSales`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeaders(),
+            },
+            body: JSON.stringify({
+              dateRange: selectedDate === 'custom' ? dateRange : undefined,
+              dateType: selectedDate
+            })
+          });
+          
+          if (!response.ok) throw new Error('Failed to fetch data');
+          
+          const responseData = await response.json();
+          if (Array.isArray(responseData) && responseData.length > 0) {
+            data[itemId] = responseData;
+          } else {
+            console.warn(`No data found for ${itemId}`);
+            data[itemId] = [];
+          }
+        } else if (itemId === 'deletedBill') {
+          // For deletedBills, fetch the data and format it for Excel
+          let url = 'http://localhost:5000/api/deleted-bills';
+          const response = await fetch(url, {
+            headers: getAuthHeaders(),
+          });
+          
+          if (!response.ok) throw new Error('Failed to fetch deleted bills');
+          
+          const billsData = await response.json();
+          
+          // Filter bills based on date selection
+          const filteredBills = filterBillsByDate(billsData);
+          
+          // Format the data for Excel export
+          const formattedBills = filteredBills.map((bill: any) => ({
+            'Bill No': bill.billNo || bill._id,
+            'Date & Time': format(new Date(bill.createdAt), 'yyyy-MM-dd HH:mm:ss'),
+            'Payment Mode': bill.paymentMode || 'Cash',
+            'Quantity': bill.items?.length || 0,
+            'Net Amount': bill.total,
+            'Deleted At': format(new Date(bill.deletedAt), 'yyyy-MM-dd HH:mm:ss')
+          }));
+          
+          data[itemId] = formattedBills;
+        } else if (itemId === 'deletedItems') {
+          // For deletedItems, fetch the data and format it for Excel
+          let url = 'http://localhost:5000/api/menu-items/deleted';
+          if (selectedDate === 'custom' && dateRange.startDate && dateRange.endDate) {
+            url += `?dateFilter=custom&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+          } else {
+            url += `?dateFilter=${selectedDate}`;
+          }
+          
+          const response = await fetch(url, {
+            headers: getAuthHeaders(),
+          });
+          
+          if (!response.ok) throw new Error('Failed to fetch deleted items');
+          
+          const itemsData = await response.json();
+          
+          // Format the data for Excel export
+          const formattedItems = itemsData.map((item: any) => ({
+            'Item Name': item.name,
+            'Category': item.category,
+            'Price': item.price,
+            'Deleted At': format(new Date(item.deletedAt), 'yyyy-MM-dd HH:mm:ss')
+          }));
+          
+          data[itemId] = formattedItems;
+        } else if (itemId === 'daySummary') {
+          const response = await fetch(`http://localhost:5000/api/export/daySummary`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeaders(),
+            },
+            body: JSON.stringify({
+              dateRange: selectedDate === 'custom' ? dateRange : undefined,
+              dateType: selectedDate
+            })
+          });
+          
+          if (!response.ok) throw new Error('Failed to fetch data');
+          
+          const responseData = await response.json();
+          if (Array.isArray(responseData) && responseData.length > 0) {
+            data[itemId] = responseData;
+          } else {
+            console.warn(`No data found for ${itemId}`);
+            data[itemId] = [];
+          }
         }
       } catch (error) {
         console.error(`Error fetching data for ${itemId}:`, error);
@@ -153,6 +232,41 @@ const ExportAndDelete: React.FC = () => {
     }
     
     return data;
+  };
+
+  // Helper function to filter bills by date (similar to DeletedBills.tsx)
+  const filterBillsByDate = (bills: any[]) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    switch (selectedDate) {
+      case 'today':
+        return bills.filter(bill => {
+          const billDate = new Date(bill.deletedAt);
+          return billDate >= today && billDate < tomorrow;
+        });
+      case 'yesterday':
+        return bills.filter(bill => {
+          const billDate = new Date(bill.deletedAt);
+          return billDate >= yesterday && billDate < today;
+        });
+      case 'custom':
+        if (dateRange.startDate && dateRange.endDate) {
+          const start = new Date(dateRange.startDate + 'T' + (dateRange.startTime || '00:00'));
+          const end = new Date(dateRange.endDate + 'T' + (dateRange.endTime || '23:59'));
+          return bills.filter(bill => {
+            const billDate = new Date(bill.deletedAt);
+            return billDate >= start && billDate <= end;
+          });
+        }
+        return bills;
+      default:
+        return bills;
+    }
   };
 
   const handleExport = async () => {
@@ -165,28 +279,33 @@ const ExportAndDelete: React.FC = () => {
       // Fetch data based on selected items and date range
       const exportData = await fetchExportData();
       
-      // Create Excel workbook
+      // Create Excel workbook for all data
       const wb = XLSX.utils.book_new();
       
       // Add each selected item's data as a separate sheet
       selectedItems.forEach(itemId => {
         const item = dataItems.find(i => i.id === itemId);
-        if (item && exportData[itemId] && exportData[itemId].length > 0) {
-          // Convert data to worksheet
+        if (item && exportData[itemId]) {
+          // Convert data to worksheet. json_to_sheet will infer headers.
           const ws = XLSX.utils.json_to_sheet(exportData[itemId]);
-          
+
+          if (exportData[itemId].length === 0) {
+            // If no data, create a sheet with just the headers
+            XLSX.utils.sheet_add_aoa(ws, [item.headers], { origin: 'A1' });
+          }
+
           // Set column widths based on content
-          const maxWidths: Record<string, number> = {};
-          exportData[itemId].forEach(row => {
-            Object.entries(row).forEach(([key, value]) => {
-              const length = String(value).length;
-              maxWidths[key] = Math.max(maxWidths[key] || 0, length);
+          const colWidths = item.headers.map((header, index) => {
+            const headerLength = header.length;
+            const dataLengths = exportData[itemId].map(row => {
+              const value = Object.values(row)[index];
+              return value ? String(value).length : 0;
             });
+            const maxLength = Math.max(headerLength, ...dataLengths);
+            return { wch: Math.min(Math.max(maxLength, 10), 50) };
           });
           
-          ws['!cols'] = Object.values(maxWidths).map(width => ({
-            wch: Math.min(Math.max(width, 10), 50) // Min width 10, max width 50
-          }));
+          ws['!cols'] = colWidths;
           
           // Add worksheet to workbook
           XLSX.utils.book_append_sheet(wb, ws, item.title);
@@ -203,7 +322,6 @@ const ExportAndDelete: React.FC = () => {
       const fileName = `export_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.xlsx`;
       XLSX.writeFile(wb, fileName);
       
-      alert('Export completed successfully!');
     } catch (error) {
       console.error('Export failed:', error);
       alert('Export failed. Please try again.');
@@ -215,8 +333,84 @@ const ExportAndDelete: React.FC = () => {
       alert('Please select at least one item to delete');
       return;
     }
-    // TODO: Implement delete functionality
-    console.log('Deleting items:', selectedItems);
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the selected data for ${selectedDate === 'custom' ? 'the selected date range' : selectedDate}? This action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const deletePromises = selectedItems.map(async (itemId) => {
+        if (itemId === 'billSales') {
+          // Delete bills by date range
+          const response = await fetch('http://localhost:5000/api/bill-items/deleteByDateRange', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getAuthHeaders(),
+            },
+            body: JSON.stringify({
+              dateRange: selectedDate === 'custom' ? dateRange : undefined,
+              dateType: selectedDate
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to delete bill sales: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          return { type: 'billSales', result };
+        } else if (itemId === 'deletedBill') {
+          // Clear all deleted bills
+          const response = await fetch('http://localhost:5000/api/deleted-bills/clear', {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to clear deleted bills: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          return { type: 'deletedBill', result };
+        } else if (itemId === 'deletedItems') {
+          // Clear all deleted items
+          const response = await fetch('http://localhost:5000/api/menu-items/clearDeleted', {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to clear deleted items: ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          return { type: 'deletedItems', result };
+        } else if (itemId === 'daySummary') {
+          // Day summary is just a report, nothing to delete
+          return { type: 'daySummary', result: { message: 'Day summary is a report only, nothing to delete' } };
+        }
+      });
+
+      const results = await Promise.all(deletePromises);
+      
+      // Show results
+      const successCount = results.filter(r => r && r.result && !r.result.error).length;
+      const totalCount = results.length;
+      
+      alert(`Delete operation completed. ${successCount} out of ${totalCount} operations were successful.`);
+      
+      // Clear selections
+      setSelectedItems([]);
+      
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert(`Delete failed: ${error.message}`);
+    }
   };
 
   return (

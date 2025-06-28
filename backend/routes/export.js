@@ -34,81 +34,46 @@ const formatDataForExcel = (data) => {
 // Export day summary
 router.post('/daySummary', async (req, res) => {
   try {
-    const { sales, type, startDate, endDate } = req.body;
+    const { dateRange, dateType } = req.body;
+    let query = {};
+
+    if (dateType === 'custom' && dateRange && dateRange.startDate && dateRange.endDate) {
+      const startDate = new Date(`${dateRange.startDate}T${dateRange.startTime}`);
+      const endDate = new Date(`${dateRange.endDate}T${dateRange.endTime}`);
+      query.createdAt = { $gte: startDate, $lte: endDate };
+    } else if (dateType === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      query.createdAt = { $gte: today, $lt: tomorrow };
+    } else if (dateType === 'yesterday') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      query.createdAt = { $gte: yesterday, $lt: today };
+    } else {
+      // Default case: if no dateType is specified, get all bills
+      // This can be adjusted based on desired default behavior
+    }
+
+    const bills = await BillItem.find(query);
+
+    const salesByDate = bills.reduce((acc, bill) => {
+      const date = format(new Date(bill.createdAt), 'yyyy-MM-dd');
+      if (!acc[date]) {
+        acc[date] = { 'Date': date, 'Number of Bills': 0, 'Tax': 0, 'Total Sales': 0 };
+      }
+      acc[date]['Number of Bills'] += 1;
+      acc[date]['Tax'] += bill.total * 0.1; // Assuming 10% tax
+      acc[date]['Total Sales'] += bill.total;
+      return acc;
+    }, {});
+
+    const sales = Object.values(salesByDate);
     
-    // Create a new workbook
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Tapbill';
-    workbook.lastModifiedBy = 'Tapbill';
-    workbook.created = new Date();
-    workbook.modified = new Date();
-    
-    const worksheet = workbook.addWorksheet('Day Wise Sales');
-
-    // Add headers with styling
-    worksheet.columns = [
-      { header: 'Date', key: 'date', width: 15 },
-      { header: 'Number of Bills', key: 'numberOfBills', width: 15 },
-      { header: 'Tax', key: 'tax', width: 15, style: { numFmt: '₹#,##0.00' } },
-      { header: 'Total Sales', key: 'totalSale', width: 15, style: { numFmt: '₹#,##0.00' } }
-    ];
-
-    // Style the header row
-    worksheet.getRow(1).font = { bold: true, size: 12 };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD3D3D3' }
-    };
-
-    // Add data rows
-    sales.forEach(sale => {
-      worksheet.addRow({
-        date: format(new Date(sale.date), 'yyyy-MM-dd'),
-        numberOfBills: sale.numberOfBills,
-        tax: sale.tax,
-        totalSale: sale.totalSale
-      });
-    });
-
-    // Add total row
-    const totalRow = worksheet.addRow({
-      date: 'Total',
-      numberOfBills: sales.reduce((sum, sale) => sum + sale.numberOfBills, 0),
-      tax: sales.reduce((sum, sale) => sum + sale.tax, 0),
-      totalSale: sales.reduce((sum, sale) => sum + sale.totalSale, 0)
-    });
-
-    // Style the total row
-    totalRow.font = { bold: true };
-    totalRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
-
-    // Auto-fit columns
-    worksheet.columns.forEach(column => {
-      column.width = Math.min(
-        Math.max(
-          column.width || 10,
-          ...worksheet.getColumn(column.key).values
-            .filter(value => value)
-            .map(value => value.toString().length)
-        ),
-        50 // Maximum width
-      );
-    });
-
-    // Generate Excel file
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    // Set response headers
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=day_wise_sales_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-    
-    // Send the file
-    return res.send(buffer);
+    res.json(sales);
 
   } catch (error) {
     console.error('Error exporting day summary:', error);
@@ -129,7 +94,7 @@ router.post('/billSales', async (req, res) => {
     const { dateRange, dateType } = req.body;
     let query = {};
 
-    if (dateType === 'custom' && dateRange) {
+    if (dateType === 'custom' && dateRange && dateRange.startDate && dateRange.endDate) {
       const startDate = new Date(`${dateRange.startDate}T${dateRange.startTime}`);
       const endDate = new Date(`${dateRange.endDate}T${dateRange.endTime}`);
       query.createdAt = { $gte: startDate, $lte: endDate };
@@ -149,12 +114,12 @@ router.post('/billSales', async (req, res) => {
 
     const bills = await BillItem.find(query);
     const sales = bills.map(bill => ({
-      'Bill No': bill._id,
+      'Bill No': bill.billNo,
       'Date': bill.createdAt,
-      'Total Amount': bill.total,
       'Payment Mode': bill.paymentMode,
       'Items': bill.items.map(item => item.name).join(', '),
-      'Tax': bill.total * 0.1
+      'Tax': bill.total * 0.1,
+      'Total Amount': bill.total
     }));
 
     res.json(sales);

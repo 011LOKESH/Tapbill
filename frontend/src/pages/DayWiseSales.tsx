@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DateFilterModal from '@/components/tapbill/DateFilterModal';
 import jsPDF from 'jspdf';
+import DateFilterModal from '@/components/tapbill/DateFilterModal';
 import { api, ShopDetails } from '@/services/api';
+import { printReceipt, BillData, printReport, ReportData } from '@/services/printService';
+import PrinterConfigService from '@/services/printerConfig';
 
 interface SaleData {
   id: number;
@@ -127,60 +129,177 @@ const DayWiseSales: React.FC = () => {
     setSelectedSales(newSelectedSales);
   };
 
+  // Generate thermal printer format PDF as backup
   const printSalesReceipt = (salesToPrint: SaleData[], fileName = 'DayWiseSales.pdf') => {
-    const doc = new jsPDF({ unit: 'pt', format: [300, 600 + salesToPrint.length * 20] });
-    let y = 30;
-    const lineGap = 18;
-    const addSpace = (space = 8) => { y += space; };
-    const dottedLine = () => {
-      doc.setLineDashPattern([2, 2], 0);
-      doc.line(20, y, 280, y);
-      addSpace(8);
-      doc.setLineDashPattern([], 0);
-      addSpace(6);
-    };
-    // Shop details
-    doc.setFontSize(14);
-    doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
-    addSpace(lineGap);
-    doc.setFontSize(10);
-    doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
-    addSpace(lineGap);
-    dottedLine();
-    // Table header
-    doc.setFont(undefined, 'bold');
-    doc.text('S.No', 30, y);
-    doc.text('Date', 65, y);
-    doc.text('No of Bills', 130, y);
-    doc.text('Tax', 200, y);
-    doc.text('Total Sales', 245, y);
-    doc.setFont(undefined, 'normal');
-    addSpace(lineGap - 2);
-    dottedLine();
-    // Table rows
-    salesToPrint.forEach((sale, idx) => {
-      doc.text(`${idx + 1}`, 30, y);
-      doc.text(sale.date, 65, y);
-      doc.text(`${sale.numberOfBills}`, 130, y);
-      doc.text(`${sale.tax.toFixed(2)}`, 200, y);
-      doc.text(`${sale.totalSale.toFixed(2)}`, 245, y);
-      addSpace(lineGap + 5);
-    });
-    dottedLine();
-    // Footer
-    doc.setFontSize(11);
-    doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
-    doc.save(fileName);
+    try {
+      // Use thermal printer format (same as home page)
+      const printerSettings = PrinterConfigService.getSettings();
+      const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+      const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+      // Validate layout before generating PDF
+      if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+        console.warn('PDF layout validation failed, using default 80mm layout');
+      }
+
+      const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+      let y = layout.topMargin;
+      const addSpace = (space = layout.lineHeight) => { y += space; };
+      const dottedLine = () => {
+        doc.setLineDashPattern([2, 2], 0);
+        doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+        addSpace(layout.sectionSpacing);
+        doc.setLineDashPattern([], 0);
+        addSpace(layout.sectionSpacing);
+      };
+
+      // Shop details
+      doc.setFontSize(layout.headerFontSize);
+      doc.text(shopDetails?.shopName || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+      addSpace();
+      doc.setFontSize(layout.subHeaderFontSize);
+      if (shopDetails?.shopAddress) {
+        doc.text(shopDetails.shopAddress, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+        addSpace();
+      }
+      if (shopDetails?.phone) {
+        doc.text(`Ph: ${shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+        addSpace();
+      }
+      dottedLine();
+
+      // Title
+      doc.setFontSize(layout.bodyFontSize);
+      doc.text('Day-Wise Sales Report', layout.centerX, y, { align: 'center' });
+      addSpace();
+      // Format current date and time as DD/MM/YYYY HH:MM
+      const currentDate = new Date();
+      const formattedDateTime = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth()+1).toString().padStart(2, '0')}/${currentDate.getFullYear()} ${currentDate.getHours().toString().padStart(2, '0')}:${currentDate.getMinutes().toString().padStart(2, '0')}`;
+      doc.text(formattedDateTime, layout.centerX, y, { align: 'center' });
+      addSpace();
+      dottedLine();
+
+      // Table headers (no S.No column)
+      doc.setFontSize(layout.itemFontSize);
+      doc.text('Date', layout.columns.item, y);
+      doc.text('Bills', layout.columns.qty, y);
+      doc.text('Tax', layout.columns.price, y);
+      doc.text('Total', layout.columns.total, y);
+      addSpace();
+      dottedLine();
+
+      // Table rows (no S.No column)
+      salesToPrint.forEach((sale) => {
+        // Format date as DD/MM/YYYY
+        const saleDate = new Date(sale.date || new Date());
+        const formattedDate = `${saleDate.getDate().toString().padStart(2, '0')}/${(saleDate.getMonth()+1).toString().padStart(2, '0')}/${saleDate.getFullYear()}`;
+        doc.text(formattedDate, layout.columns.item, y, { maxWidth: layout.columnWidths.item });
+        doc.text(String(sale.numberOfBills || 0), layout.columns.qty, y);
+        doc.text(String((sale.tax || 0).toFixed(0)), layout.columns.price, y);
+        doc.text(String((sale.totalSale || 0).toFixed(0)), layout.columns.total, y);
+        addSpace();
+      });
+      dottedLine();
+
+      // Footer
+      doc.setFontSize(layout.bodyFontSize);
+      addSpace(layout.sectionSpacing);
+      doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+      // Save PDF with printer width in filename
+      const thermalFileName = fileName.replace('.pdf', `_${printerSettings.selectedWidth}.pdf`);
+      doc.save(thermalFileName);
+    } catch (error) {
+      console.error('Error generating thermal print PDF:', error);
+    }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const selected = filteredSales.filter(sale => selectedSales.has(sale.id));
-    if (selected.length === 0) return;
-    printSalesReceipt(selected, 'DayWiseSales_Selected.pdf');
+    if (selected.length === 0) {
+      alert('Please select sales records to print');
+      return;
+    }
+
+    // Convert report data to BillData format for direct printing (same as home page)
+    const billData: BillData = {
+      billNo: `DayWiseSales_${new Date().toLocaleDateString().replace(/\//g, '-')}`,
+      items: selected.map((sale, index) => ({
+        name: `${sale.date || 'N/A'} (${sale.numberOfBills || 0} bills)`,
+        quantity: 1,
+        price: sale.totalSale || 0,
+        total: sale.totalSale || 0
+      })),
+      total: selected.reduce((sum, sale) => sum + (sale.totalSale || 0), 0),
+      createdAt: new Date(),
+      shopDetails: {
+        name: shopDetails?.shopName || 'TapBill Restaurant',
+        address: shopDetails?.shopAddress || '',
+        phone: shopDetails?.phone || ''
+      }
+    };
+
+    // Try direct printing first (same as home page)
+    let printSuccess = false;
+    try {
+      printSuccess = await printReceipt(billData, { silent: true });
+      if (printSuccess) {
+        console.log('✅ Day-wise sales report printed successfully');
+      }
+    } catch (error) {
+      console.error('Direct print error:', error);
+    }
+
+    // Show success/failure message and handle PDF generation
+    const printerSettings = PrinterConfigService.getSettings();
+    if (printSuccess) {
+      // Printer connected and printing successful - no PDF needed
+      alert(`✅ Report printed successfully (${printerSettings.selectedWidth})!`);
+    } else {
+      // Printer not connected - show error and generate PDF as backup
+      printSalesReceipt(selected, 'DayWiseSales_Selected.pdf');
+      alert(`⚠️ Direct printing failed. PDF saved successfully (${printerSettings.selectedWidth}). Please check your printer connection.`);
+    }
   };
 
-  const handlePrintSingle = (sale: SaleData) => {
-    printSalesReceipt([sale], `DayWiseSales_${sale.date}.pdf`);
+  const handlePrintSingle = async (sale: SaleData) => {
+    // Convert single sale to BillData format for direct printing (same as home page)
+    const billData: BillData = {
+      billNo: `DayWiseSales_${sale.date}`,
+      items: [{
+        name: `${sale.date || 'N/A'} (${sale.numberOfBills || 0} bills)`,
+        quantity: 1,
+        price: sale.totalSale || 0,
+        total: sale.totalSale || 0
+      }],
+      total: sale.totalSale || 0,
+      createdAt: new Date(),
+      shopDetails: {
+        name: shopDetails?.shopName || 'TapBill Restaurant',
+        address: shopDetails?.shopAddress || '',
+        phone: shopDetails?.phone || ''
+      }
+    };
+
+    // Try direct printing first (same as home page)
+    let printSuccess = false;
+    try {
+      printSuccess = await printReceipt(billData, { silent: true });
+    } catch (error) {
+      console.error('Direct print error:', error);
+    }
+
+    // Show success/failure message and handle PDF generation
+    const printerSettings = PrinterConfigService.getSettings();
+    if (printSuccess) {
+      // Printer connected and printing successful - no PDF needed
+      alert(`✅ Day sales for ${sale.date} printed successfully (${printerSettings.selectedWidth})!`);
+    } else {
+      // Printer not connected - show error and generate PDF as backup
+      printSalesReceipt([sale], `DayWiseSales_${sale.date}.pdf`);
+      alert(`⚠️ Direct printing failed. PDF saved successfully (${printerSettings.selectedWidth}). Please check your printer connection.`);
+    }
   };
 
   const handleExport = async () => {
@@ -313,10 +432,15 @@ const DayWiseSales: React.FC = () => {
                       />
                     </td>
                     <td className="px-6 py-4 text-center">{index + 1}</td>
-                    <td className="px-6 py-4 text-center">{new Date(sale.date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-center">{sale.numberOfBills}</td>
-                    <td className="px-6 py-4 text-center">₹{sale.tax.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-center">₹{sale.totalSale.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-center">
+                      {sale.date ? (() => {
+                        const saleDate = new Date(sale.date);
+                        return `${saleDate.getDate().toString().padStart(2, '0')}/${(saleDate.getMonth()+1).toString().padStart(2, '0')}/${saleDate.getFullYear()}`;
+                      })() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-center">{sale.numberOfBills || 0}</td>
+                    <td className="px-6 py-4 text-center">₹{(sale.tax || 0).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-center">₹{(sale.totalSale || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handlePrintSingle(sale)}

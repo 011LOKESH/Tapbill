@@ -38,7 +38,7 @@ const Index = () => {
     }
   };
 
-  const handleUpdateQuantity = async (id: string, quantity: number) => {
+  const handleUpdateQuantity = async (id: number, quantity: number) => {
     try {
       const updatedItem = await api.updateBillItemQuantity(id, quantity);
       setBillItems(prevItems =>
@@ -51,7 +51,7 @@ const Index = () => {
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = async (id: number) => {
     try {
       await api.deleteBillItem(id);
       setBillItems(prevItems => prevItems.filter(item => item._id !== id));

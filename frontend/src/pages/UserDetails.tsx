@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../services/api';
 
 const VERSION = '1.0';
 
@@ -30,7 +31,7 @@ const UserDetails: React.FC = () => {
   useEffect(() => {
     // Fetch user details from backend
     setLoading(true);
-    fetch('http://localhost:5000/api/user-details', {
+    fetch(`${API_URL}/user-details`, {
       headers: { 'Authorization': `Bearer ${JSON.parse(localStorage.getItem('userSession') || 'null')?.token || ''}` }
     })
       .then(res => res.json())
@@ -48,7 +49,7 @@ const UserDetails: React.FC = () => {
   const handleSave = async () => {
     setLoading(true);
     setSuccess(false);
-    await fetch('http://localhost:5000/api/user-details', {
+    await fetch(`${API_URL}/user-details`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

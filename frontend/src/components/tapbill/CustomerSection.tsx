@@ -5,6 +5,12 @@ import MenuCategories from "./MenuCategories";
 import PricingArea from "./PricingArea";
 import jsPDF from 'jspdf';
 import { api, Customer, ShopDetails } from '@/services/api';
+import { printReceipt, generateReceiptHTML, getAvailablePrinters, BillData } from '@/services/printService';
+import BarcodeScanner from './BarcodeScanner';
+import BarcodeManager from './BarcodeManager';
+import AddMissingItemModal from '../modals/AddMissingItemModal';
+import BarcodeService from '@/services/barcodeService';
+import PrinterConfigService from '@/services/printerConfig';
 
 interface CustomerSectionProps {
   onSearch?: (query: string) => void;
@@ -43,6 +49,15 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
   const [customerSearch, setCustomerSearch] = useState('');
   const [billNo, setBillNo] = useState<number | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [availablePrinters, setAvailablePrinters] = useState<any[]>([]);
+  const [selectedPrinter, setSelectedPrinter] = useState<string>('');
+
+  // Barcode scanning states
+  const [isBarcodeActive, setIsBarcodeActive] = useState(false);
+  const [showBarcodeManager, setShowBarcodeManager] = useState(false);
+  const [barcodeMessage, setBarcodeMessage] = useState<string>('');
+  const [showAddMissingItem, setShowAddMissingItem] = useState(false);
+  const [missingBarcode, setMissingBarcode] = useState<string>('');
 
   // Initialize with Menu 1 on component mount
   useEffect(() => {
@@ -53,6 +68,24 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
     };
     setMenus([initialMenu]);
     setActiveMenuId(initialMenu.id);
+  }, []);
+
+  // Load available printers on component mount
+  useEffect(() => {
+    const loadPrinters = async () => {
+      try {
+        const printers = await getAvailablePrinters();
+        setAvailablePrinters(printers);
+        if (printers.length > 0) {
+          // Set default printer (first one or find default)
+          const defaultPrinter = printers.find(p => p.isDefault) || printers[0];
+          setSelectedPrinter(defaultPrinter?.name || '');
+        }
+      } catch (error) {
+        console.error('Error loading printers:', error);
+      }
+    };
+    loadPrinters();
   }, []);
 
   // Fetch last bill details on component mount
@@ -183,11 +216,109 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
   const handleDeleteMenu = (menuId: string) => {
     // Don't allow deleting Menu 1
     if (menus.find(menu => menu.id === menuId)?.name === "Menu 1") return;
-    
+
     setMenus(prev => prev.filter(menu => menu.id !== menuId));
     if (activeMenuId === menuId) {
       setActiveMenuId(menus.length > 1 ? menus[0].id : null);
     }
+  };
+
+  // Barcode scanning function
+  const handleBarcodeScanned = async (barcode: string) => {
+    console.log('Barcode scanned:', barcode);
+    setBarcodeMessage('');
+
+    try {
+      const result = await BarcodeService.findItemByBarcode(barcode);
+
+      if (result.success && result.item) {
+        // Add item to current menu
+        if (activeMenu) {
+          const existingItemIndex = activeMenu.items.findIndex(item => item.name === result.item!.name);
+
+          if (existingItemIndex >= 0) {
+            // Increase quantity if item already exists
+            setMenus(prev => prev.map(menu =>
+              menu.id === activeMenuId
+                ? {
+                    ...menu,
+                    items: menu.items.map((item, index) =>
+                      index === existingItemIndex
+                        ? { ...item, quantity: item.quantity + 1 }
+                        : item
+                    )
+                  }
+                : menu
+            ));
+          } else {
+            // Add new item
+            const newItem: BillItem = {
+              _id: Date.now(),
+              name: result.item.name,
+              price: result.item.price,
+              quantity: 1
+            };
+
+            setMenus(prev => prev.map(menu =>
+              menu.id === activeMenuId
+                ? { ...menu, items: [...menu.items, newItem] }
+                : menu
+            ));
+          }
+
+          setBarcodeMessage(`✅ Added: ${result.item.name} (₹${result.item.price})`);
+
+          // Clear message after 3 seconds
+          setTimeout(() => setBarcodeMessage(''), 3000);
+        }
+      } else {
+        // Item not found - show add missing item modal
+        console.log('Item not found for barcode:', barcode);
+        setMissingBarcode(barcode);
+        setShowAddMissingItem(true);
+        setBarcodeMessage(`🔍 Item not found for barcode: ${barcode}`);
+      }
+    } catch (error) {
+      console.error('Error processing barcode:', error);
+      // Check if it's a 404 error (item not found)
+      if (error instanceof Error && error.message.includes('No item found')) {
+        setMissingBarcode(barcode);
+        setShowAddMissingItem(true);
+        setBarcodeMessage(`🔍 Item not found for barcode: ${barcode}`);
+      } else {
+        setBarcodeMessage(`❌ Error processing barcode: ${barcode}`);
+        setTimeout(() => setBarcodeMessage(''), 5000);
+      }
+    }
+  };
+
+  // Handle adding new item from missing barcode modal
+  const handleMissingItemAdded = (newItem: any) => {
+    console.log('New item added:', newItem);
+
+    // Add the new item to the current menu
+    if (activeMenu) {
+      const billItem: BillItem = {
+        _id: Date.now(),
+        name: newItem.name,
+        price: newItem.price,
+        quantity: 1
+      };
+
+      setMenus(prev => prev.map(menu =>
+        menu.id === activeMenuId
+          ? { ...menu, items: [...menu.items, billItem] }
+          : menu
+      ));
+
+      setBarcodeMessage(`✅ Added new item: ${newItem.name} (Rs.${newItem.price})`);
+      setTimeout(() => setBarcodeMessage(''), 3000);
+    }
+
+    // Trigger a refresh of the MenuCategories component by dispatching a custom event
+    window.dispatchEvent(new CustomEvent('menuItemAdded', {
+      detail: { item: newItem }
+    }));
   };
 
   const handlePay = async () => {
@@ -249,10 +380,10 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
   const activeMenu = menus.find(menu => menu.id === activeMenuId);
   const currentTotal = activeMenu?.items.reduce((total, item) => total + (item.price * item.quantity), 0) || 0;
 
-  // Helper to format date and time
+  // Helper to format date and time in DD/MM/YYYY HH:MM format
   const formatDateTime = (date: Date) => {
     const d = new Date(date);
-    return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
   // Dummy phone number for now (replace with actual selected customer phone if available)
@@ -304,70 +435,148 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
       // Clear customer selection after printing
       setSelectedCustomer(null);
       setCustomerSearch('');
-      // Print PDF with correct bill number
-      const doc = new jsPDF({ unit: 'pt', format: [300, 600] });
-      let y = 30;
-      const lineGap = 18;
-      const addSpace = (space = 8) => { y += space; };
+
+      // Prepare bill data for printing
+      const printBillData: BillData = {
+        billNo: savedBill.billNo || 'NA',
+        items: activeMenu.items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.price * item.quantity
+        })),
+        total,
+        createdAt: new Date(),
+        shopDetails: {
+          name: shopDetails?.shopName || 'TapBill Restaurant',
+          address: shopDetails?.shopAddress || '',
+          phone: shopDetails?.phone || ''
+        }
+      };
+
+      // Try direct printing first
+      let printSuccess = false;
+      try {
+        if (selectedPrinter) {
+          printSuccess = await printReceipt(printBillData, {
+            printerName: selectedPrinter,
+            silent: true
+          });
+        } else {
+          printSuccess = await printReceipt(printBillData, { silent: true });
+        }
+
+        if (printSuccess) {
+          console.log('✅ Bill printed successfully to printer');
+        } else {
+          console.log('⚠️ Direct printing failed, generating PDF as fallback');
+        }
+      } catch (error) {
+        console.error('Print error:', error);
+        console.log('⚠️ Direct printing failed, generating PDF as fallback');
+      }
+
+      // Always generate PDF as backup (or if printing failed)
+      const printerSettings = PrinterConfigService.getSettings();
+      const pdfFormat = PrinterConfigService.getPDFFormat(printerSettings.selectedWidth);
+      const layout = PrinterConfigService.getPDFLayout(printerSettings.selectedWidth);
+
+      // Validate layout before generating PDF
+      if (!PrinterConfigService.validatePDFLayout(printerSettings.selectedWidth)) {
+        console.warn('PDF layout validation failed, using default 80mm layout');
+        // Fallback to 80mm layout if validation fails
+        const fallbackLayout = PrinterConfigService.getPDFLayout('80mm');
+        const fallbackFormat = PrinterConfigService.getPDFFormat('80mm');
+        const doc = new jsPDF({ unit: 'pt', format: fallbackFormat });
+      } else {
+        console.log(PrinterConfigService.getLayoutSummary(printerSettings.selectedWidth));
+      }
+
+      const doc = new jsPDF({ unit: 'pt', format: pdfFormat });
+
+      let y = layout.topMargin;
+      const addSpace = (space = layout.lineHeight) => { y += space; };
       const dottedLine = () => {
         doc.setLineDashPattern([2, 2], 0);
-        doc.line(20, y, 280, y);
-        addSpace(8);
+        doc.line(layout.leftMargin, y, layout.paperWidth - layout.rightMargin, y);
+        addSpace(layout.sectionSpacing);
         doc.setLineDashPattern([], 0);
-        addSpace(6);
+        addSpace(layout.sectionSpacing);
       };
       // Shop details
-      doc.setFontSize(14);
-      doc.text(shopDetails?.shopName || 'SHOP NAME', 150, y, { align: 'center' });
-      addSpace(lineGap);
-      doc.setFontSize(10);
-      doc.text(shopDetails?.shopAddress || 'Shop Address', 150, y, { align: 'center' });
-      addSpace(lineGap);
+      doc.setFontSize(layout.headerFontSize);
+      doc.text(shopDetails?.shopName || 'TapBill Restaurant', layout.centerX, y, { align: 'center' });
+      addSpace();
+      doc.setFontSize(layout.subHeaderFontSize);
+      if (shopDetails?.shopAddress) {
+        doc.text(shopDetails.shopAddress, layout.centerX, y, { align: 'center', maxWidth: layout.contentWidth });
+        addSpace();
+      }
+      if (shopDetails?.phone) {
+        doc.text(`Ph: ${shopDetails.phone}`, layout.centerX, y, { align: 'center' });
+        addSpace();
+      }
       dottedLine();
-      // Customer details (side by side)
-      doc.setFontSize(10);
-      doc.text(`Customer: ${selectedCustomer?.name || '-'}`, 30, y);
-      doc.text(`Phone: ${selectedCustomer?.contact || '-'}`, 170, y);
-      addSpace(lineGap);
+      // Customer details
+      doc.setFontSize(layout.bodyFontSize);
+      // Stack vertically for both 58mm and 80mm to prevent collision
+      doc.text(`Customer: ${selectedCustomer?.name || '-'}`, layout.leftMargin, y);
+      addSpace();
+      doc.text(`Phone: ${selectedCustomer?.contact || '-'}`, layout.leftMargin, y);
+      addSpace();
       dottedLine();
       // Bill info
-      doc.text(`Bill No: ${savedBill.billNo || '-'}`, 30, y);
-      doc.text(`Date: ${formatDateTime(new Date())}`, 170, y);
-      addSpace(lineGap);
+      // Stack vertically for both 58mm and 80mm to prevent cutoff
+      doc.text(`Bill No: ${savedBill.billNo || '-'}`, layout.leftMargin, y);
+      addSpace();
+      doc.text(`Date: ${formatDateTime(new Date())}`, layout.leftMargin, y);
+      addSpace();
       dottedLine();
-      // Table header
+      // Table header (no S.No column)
+      doc.setFontSize(layout.itemFontSize);
       doc.setFont(undefined, 'bold');
-      doc.text('S.No', 30, y);
-      doc.text('Item', 65, y);
-      doc.text('Qty', 160, y);
-      doc.text('Price', 200, y);
-      doc.text('Amt', 245, y);
+      doc.text('Item', layout.columns.item, y);
+      doc.text('Qty', layout.columns.qty, y);
+      doc.text('Price', layout.columns.price, y);
+      doc.text('Total', layout.columns.total, y);
       doc.setFont(undefined, 'normal');
-      addSpace(lineGap - 2);
+      addSpace(layout.sectionSpacing);
       dottedLine();
-      // Table rows
-      activeMenu.items.forEach((item, idx) => {
-        doc.text(`${idx + 1}`, 30, y);
-        doc.text(item.name, 65, y, { maxWidth: 90 });
-        doc.text(`${item.quantity}`, 160, y);
-        doc.text(`${item.price.toFixed(2)}`, 200, y);
-        doc.text(`${(item.price * item.quantity).toFixed(2)}`, 245, y);
-        addSpace(lineGap - 2);
+      // Table rows (no S.No column)
+      activeMenu.items.forEach((item) => {
+        doc.text(item.name, layout.columns.item, y, { maxWidth: layout.columnWidths.item });
+        doc.text(String(item.quantity), layout.columns.qty, y);
+        doc.text(String(item.price.toFixed(2)), layout.columns.price, y);
+        doc.text(String((item.price * item.quantity).toFixed(2)), layout.columns.total, y);
+        addSpace(layout.lineHeight);
       });
       dottedLine();
       // Totals
       const totalQty = activeMenu.items.reduce((sum, i) => sum + i.quantity, 0);
+      doc.setFontSize(layout.totalFontSize);
       doc.setFont(undefined, 'bold');
-      doc.text(`Total Qty: ${totalQty}`, 30, y);
-      doc.text(`Total: ₹${total.toFixed(2)}`, 170, y);
+      // Stack vertically for both layouts to ensure proper positioning
+      doc.text(`Total Qty: ${String(totalQty)}`, layout.leftMargin, y);
+      addSpace();
+      doc.text(`Total: Rs.${String(total.toFixed(2))}`, layout.leftMargin, y);
+      addSpace();
       doc.setFont(undefined, 'normal');
-      addSpace(lineGap);
       dottedLine();
       // Footer
-      doc.setFontSize(11);
-      doc.text('Thank You, Visit again.', 150, y + 10, { align: 'center' });
-      // Save PDF
-      doc.save(`Bill_${savedBill.billNo || 'NA'}.pdf`);
+      doc.setFontSize(layout.bodyFontSize);
+      addSpace(layout.sectionSpacing);
+      doc.text('Thank You, Visit again.', layout.centerX, y, { align: 'center' });
+
+      // Save PDF (always as backup) with printer width in filename
+      const fileName = `Bill_${savedBill.billNo || 'NA'}_${printerSettings.selectedWidth}.pdf`;
+      doc.save(fileName);
+
+      // Show success message with printer width info
+      if (printSuccess) {
+        alert(`✅ Bill printed successfully (${printerSettings.selectedWidth})! PDF also saved as backup.`);
+      } else {
+        alert(`⚠️ Direct printing failed. PDF saved successfully (${printerSettings.selectedWidth}). Please check your printer connection.`);
+      }
     } catch (error) {
       console.error('Error saving/printing bill:', error);
     } finally {
@@ -410,6 +619,45 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
           </button>
         </div>
       </div>
+
+      {/* Barcode Controls */}
+      <div className="flex gap-2 mb-2">
+        <button
+          onClick={() => setIsBarcodeActive(!isBarcodeActive)}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isBarcodeActive
+              ? 'bg-green-500 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {isBarcodeActive ? '📱 Scanner ON' : '📱 Scanner OFF'}
+        </button>
+        <button
+          onClick={() => setShowBarcodeManager(true)}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+        >
+          🏷️ Manage Barcodes
+        </button>
+      </div>
+
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        onBarcodeScanned={handleBarcodeScanned}
+        isActive={isBarcodeActive}
+        className="mb-4"
+      />
+
+      {/* Barcode Message */}
+      {barcodeMessage && (
+        <div className={`mb-4 p-3 rounded-lg text-sm font-medium ${
+          barcodeMessage.includes('✅')
+            ? 'bg-green-100 text-green-800 border border-green-200'
+            : 'bg-red-100 text-red-800 border border-red-200'
+        }`}>
+          {barcodeMessage}
+        </div>
+      )}
+
         <div className="w-[500px] relative">
           <input
             type="text"
@@ -561,6 +809,24 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ onSearch }) => {
         </div>
         <MenuCategories onItemClick={handleItemClick} />
       </div>
+
+      {/* Barcode Manager Modal */}
+      <BarcodeManager
+        isOpen={showBarcodeManager}
+        onClose={() => setShowBarcodeManager(false)}
+        onBarcodeUpdated={() => {
+          // Optionally refresh data or show success message
+          console.log('Barcode updated successfully');
+        }}
+      />
+
+      {/* Add Missing Item Modal */}
+      <AddMissingItemModal
+        isOpen={showAddMissingItem}
+        onClose={() => setShowAddMissingItem(false)}
+        barcode={missingBarcode}
+        onItemAdded={handleMissingItemAdded}
+      />
     </div>
   );
 };

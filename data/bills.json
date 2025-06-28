@@ -1,0 +1,2287 @@
+{
+  "bills": [
+    {
+      "_id": 1000000001,
+      "items": [
+        {
+          "name": "Chola Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "67f1faa65eadb8c75e7ff5df"
+        },
+        {
+          "name": "Uthapam",
+          "quantity": 1,
+          "price": 15,
+          "total": 15,
+          "_id": "67f1faa65eadb8c75e7ff5e0"
+        }
+      ],
+      "total": 55,
+      "createdAt": "2025-04-06T03:53:10.238Z",
+      "__v": 0,
+      "billNo": 100
+    },
+    {
+      "_id": 1000000002,
+      "items": [
+        {
+          "name": "Chola Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "67f1fb915eadb8c75e7ff6cb"
+        },
+        {
+          "name": "Uthapam",
+          "quantity": 1,
+          "price": 15,
+          "total": 15,
+          "_id": "67f1fb915eadb8c75e7ff6cc"
+        },
+        {
+          "name": "Roast",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "67f1fb915eadb8c75e7ff6cd"
+        },
+        {
+          "name": "Cheese Naan",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "67f1fb915eadb8c75e7ff6ce"
+        },
+        {
+          "name": "Tandoori Roti",
+          "quantity": 1,
+          "price": 25,
+          "total": 25,
+          "_id": "67f1fb915eadb8c75e7ff6cf"
+        }
+      ],
+      "total": 160,
+      "createdAt": "2025-04-06T03:57:05.842Z",
+      "__v": 0,
+      "billNo": 101
+    },
+    {
+      "_id": 1000000003,
+      "items": [
+        {
+          "name": "Cheese Naan",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "67f1fbaf5eadb8c75e7ff6d2"
+        },
+        {
+          "name": "Tandoori Roti",
+          "quantity": 1,
+          "price": 25,
+          "total": 25,
+          "_id": "67f1fbaf5eadb8c75e7ff6d3"
+        },
+        {
+          "name": "Mushroom Noodles",
+          "quantity": 2,
+          "price": 70,
+          "total": 140,
+          "_id": "67f1fbaf5eadb8c75e7ff6d4"
+        }
+      ],
+      "total": 205,
+      "createdAt": "2025-04-06T03:57:35.286Z",
+      "__v": 0,
+      "billNo": 102
+    },
+    {
+      "_id": 1000000005,
+      "items": [
+        {
+          "name": "Chola Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "67f365ad1abec83410b2c835"
+        },
+        {
+          "name": "Uthapam",
+          "quantity": 2,
+          "price": 15,
+          "total": 30,
+          "_id": "67f365ad1abec83410b2c836"
+        }
+      ],
+      "total": 70,
+      "createdAt": "2025-04-07T05:42:05.931Z",
+      "__v": 0,
+      "billNo": 103
+    },
+    {
+      "_id": 1000000006,
+      "items": [
+        {
+          "name": "Masala Roast",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "67f365b31abec83410b2c839"
+        },
+        {
+          "name": "Egg Roast",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "67f365b31abec83410b2c83a"
+        },
+        {
+          "name": "Pongal",
+          "quantity": 1,
+          "price": 20,
+          "total": 20,
+          "_id": "67f365b31abec83410b2c83b"
+        },
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 10,
+          "total": 10,
+          "_id": "67f365b31abec83410b2c83c"
+        }
+      ],
+      "total": 120,
+      "createdAt": "2025-04-07T05:42:11.506Z",
+      "__v": 0,
+      "billNo": 104
+    },
+    {
+      "_id": 1000000008,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6805c3cba9ed0547769de8a0"
+        }
+      ],
+      "total": 50,
+      "createdAt": "2025-04-21T04:04:27.118Z",
+      "__v": 0,
+      "billNo": 105
+    },
+    {
+      "_id": 1000000009,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6805dcc0f67e5ce444ef9071"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6805dcc0f67e5ce444ef9072"
+        }
+      ],
+      "total": 90,
+      "createdAt": "2025-04-21T05:50:56.427Z",
+      "__v": 0,
+      "billNo": 106
+    },
+    {
+      "_id": 1000000010,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6805de20090a5962b094627c"
+        }
+      ],
+      "total": 40,
+      "createdAt": "2025-04-21T05:56:48.137Z",
+      "__v": 0,
+      "billNo": 107
+    },
+    {
+      "_id": 1000000012,
+      "items": [
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "680608b0639cde8b2ab63c05"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "680608b0639cde8b2ab63c06"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 2,
+          "price": 250,
+          "total": 500,
+          "_id": "680608b0639cde8b2ab63c07"
+        }
+      ],
+      "total": 920,
+      "createdAt": "2025-04-21T08:58:24.514Z",
+      "__v": 0,
+      "billNo": 108
+    },
+    {
+      "_id": 1000000014,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6820bccec40432f36be47d5c"
+        },
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6820bccec40432f36be47d5d"
+        }
+      ],
+      "total": 90,
+      "createdAt": "2025-05-11T15:05:50.212Z",
+      "__v": 0,
+      "billNo": 109
+    },
+    {
+      "_id": 1000000015,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6820bd84c40432f36be47e60"
+        },
+        {
+          "name": "Chicken Parotta",
+          "quantity": 1,
+          "price": 80,
+          "total": 80,
+          "_id": "6820bd84c40432f36be47e61"
+        },
+        {
+          "name": "Egg Parotta",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6820bd84c40432f36be47e62"
+        }
+      ],
+      "total": 170,
+      "createdAt": "2025-05-11T15:08:52.545Z",
+      "__v": 0,
+      "billNo": 110
+    },
+    {
+      "_id": 1000000016,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6826124cd0ebabe51f50de92"
+        },
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "6826124cd0ebabe51f50de93"
+        }
+      ],
+      "total": 80,
+      "createdAt": "2025-05-15T16:11:56.722Z",
+      "__v": 0,
+      "billNo": 111
+    },
+    {
+      "_id": 1000000017,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "68355dda5a7dc5ff3a462f71"
+        }
+      ],
+      "total": 50,
+      "createdAt": "2025-05-27T06:38:18.098Z",
+      "__v": 0,
+      "billNo": 112
+    },
+    {
+      "_id": 1000000018,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6835612e5a7dc5ff3a4630af"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6835612e5a7dc5ff3a4630b0"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 4,
+          "price": 220,
+          "total": 880,
+          "_id": "6835612e5a7dc5ff3a4630b1"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 1,
+          "price": 250,
+          "total": 250,
+          "_id": "6835612e5a7dc5ff3a4630b2"
+        }
+      ],
+      "total": 1220,
+      "createdAt": "2025-05-27T06:52:30.454Z",
+      "__v": 0,
+      "billNo": 113
+    },
+    {
+      "_id": 1000000019,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "685168013cb48c442079f721"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "685168013cb48c442079f722"
+        }
+      ],
+      "total": 160,
+      "createdAt": "2025-06-17T13:05:05.412Z",
+      "__v": 0,
+      "billNo": 114
+    },
+    {
+      "_id": 1000000020,
+      "items": [
+        {
+          "name": "Butter Naan",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "68516a4b5c1c4257f1fd2019"
+        },
+        {
+          "name": "Kulcha",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "68516a4b5c1c4257f1fd201a"
+        }
+      ],
+      "total": 100,
+      "createdAt": "2025-06-17T13:14:51.650Z",
+      "__v": 0,
+      "billNo": 115
+    },
+    {
+      "_id": 1000000021,
+      "items": [
+        {
+          "name": "Butter Naan",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "68516a515c1c4257f1fd201d"
+        }
+      ],
+      "total": 50,
+      "createdAt": "2025-06-17T13:14:57.374Z",
+      "__v": 0,
+      "billNo": 116
+    },
+    {
+      "_id": 1000000022,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "68516f445c1c4257f1fd2318"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "68516f445c1c4257f1fd2319"
+        }
+      ],
+      "total": 100,
+      "createdAt": "2025-06-17T13:36:04.213Z",
+      "__v": 0,
+      "billNo": 117
+    },
+    {
+      "_id": 1000000025,
+      "items": [
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "68518d418552382ebcccbc0a"
+        },
+        {
+          "name": "Dosa",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "68518d418552382ebcccbc0b"
+        }
+      ],
+      "total": 130,
+      "createdAt": "2025-06-17T15:44:01.741Z",
+      "__v": 0,
+      "billNo": 118
+    },
+    {
+      "_id": 1000000026,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "68518d4a8552382ebcccbc0e"
+        },
+        {
+          "name": "Chicken Noodles",
+          "quantity": 1,
+          "price": 150,
+          "total": 150,
+          "_id": "68518d4a8552382ebcccbc0f"
+        }
+      ],
+      "total": 190,
+      "createdAt": "2025-06-17T15:44:10.003Z",
+      "__v": 0,
+      "billNo": 119
+    },
+    {
+      "_id": 1000000027,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "68518d508552382ebcccbc12"
+        }
+      ],
+      "total": 50,
+      "createdAt": "2025-06-17T15:44:16.446Z",
+      "__v": 0,
+      "billNo": 120
+    },
+    {
+      "_id": 1000000028,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "685261365490315d4e549063"
+        }
+      ],
+      "total": 100,
+      "createdAt": "2025-06-18T06:48:22.309Z",
+      "__v": 0,
+      "billNo": 121
+    },
+    {
+      "_id": 1000000029,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "685263545490315d4e54909a"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "685263545490315d4e54909b"
+        },
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685263545490315d4e54909c"
+        }
+      ],
+      "total": 150,
+      "createdAt": "2025-06-18T06:57:24.957Z",
+      "__v": 0,
+      "billNo": 122
+    },
+    {
+      "_id": 1000000030,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852941016f2f783ac50ce84"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "6852941016f2f783ac50ce85"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "6852941016f2f783ac50ce86"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 1,
+          "price": 250,
+          "total": 250,
+          "_id": "6852941016f2f783ac50ce87"
+        },
+        {
+          "name": "Fish Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "6852941016f2f783ac50ce88"
+        }
+      ],
+      "total": 930,
+      "createdAt": "2025-06-18T10:25:20.138Z",
+      "__v": 0,
+      "billNo": 123
+    },
+    {
+      "_id": 1000000031,
+      "items": [
+        {
+          "name": "Chicken Parotta",
+          "quantity": 1,
+          "price": 80,
+          "total": 80,
+          "_id": "6852a7a316f2f783ac50d2ba"
+        }
+      ],
+      "total": 80,
+      "createdAt": "2025-06-18T11:48:51.362Z",
+      "__v": 0,
+      "billNo": 124
+    },
+    {
+      "_id": 1000000032,
+      "items": [
+        {
+          "name": "Egg Fried Rice",
+          "quantity": 1,
+          "price": 100,
+          "total": 100,
+          "_id": "6852aa9216f2f783ac50d30b"
+        },
+        {
+          "name": "Omelette",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852aa9216f2f783ac50d30c"
+        },
+        {
+          "name": "Boiled Egg",
+          "quantity": 1,
+          "price": 20,
+          "total": 20,
+          "_id": "6852aa9216f2f783ac50d30d"
+        },
+        {
+          "name": "Egg Biryani",
+          "quantity": 1,
+          "price": 150,
+          "total": 150,
+          "_id": "6852aa9216f2f783ac50d30e"
+        }
+      ],
+      "total": 310,
+      "createdAt": "2025-06-18T12:01:22.256Z",
+      "__v": 0,
+      "billNo": 125
+    },
+    {
+      "_id": 1000000033,
+      "items": [
+        {
+          "name": "Chicken Parotta",
+          "quantity": 2,
+          "price": 80,
+          "total": 160,
+          "_id": "6852ab0d16f2f783ac50d35d"
+        },
+        {
+          "name": "Egg Parotta",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852ab0d16f2f783ac50d35e"
+        },
+        {
+          "name": "Kothu Parotta",
+          "quantity": 2,
+          "price": 100,
+          "total": 200,
+          "_id": "6852ab0d16f2f783ac50d35f"
+        },
+        {
+          "name": "ais",
+          "quantity": 1,
+          "price": 10,
+          "total": 10,
+          "_id": "6852ab0d16f2f783ac50d360"
+        }
+      ],
+      "total": 420,
+      "createdAt": "2025-06-18T12:03:25.214Z",
+      "__v": 0,
+      "billNo": 126
+    },
+    {
+      "_id": 1000000034,
+      "items": [
+        {
+          "name": "Schezwan Noodles",
+          "quantity": 1,
+          "price": 130,
+          "total": 130,
+          "_id": "6852abe716f2f783ac50d3cb"
+        },
+        {
+          "name": "ais",
+          "quantity": 7,
+          "price": 10,
+          "total": 70,
+          "_id": "6852abe716f2f783ac50d3cc"
+        }
+      ],
+      "total": 200,
+      "createdAt": "2025-06-18T12:07:03.005Z",
+      "__v": 0,
+      "billNo": 127
+    },
+    {
+      "_id": 1000000035,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852acb716f2f783ac50d460"
+        },
+        {
+          "name": "Kulcha",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852acb716f2f783ac50d461"
+        },
+        {
+          "name": "Plain Naan",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852acb716f2f783ac50d462"
+        },
+        {
+          "name": "Butter Roti",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "6852acb716f2f783ac50d463"
+        },
+        {
+          "name": "Butter Naan",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852acb716f2f783ac50d464"
+        }
+      ],
+      "total": 210,
+      "createdAt": "2025-06-18T12:10:30.998Z",
+      "__v": 0,
+      "billNo": 128
+    },
+    {
+      "_id": 1000000036,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852afe116f2f783ac50d6dd"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852afe116f2f783ac50d6de"
+        },
+        {
+          "name": "Paneer Tikka",
+          "quantity": 1,
+          "price": 180,
+          "total": 180,
+          "_id": "6852afe116f2f783ac50d6df"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 1,
+          "price": 250,
+          "total": 250,
+          "_id": "6852afe116f2f783ac50d6e0"
+        }
+      ],
+      "total": 520,
+      "createdAt": "2025-06-18T12:24:01.042Z",
+      "__v": 0,
+      "billNo": 129
+    },
+    {
+      "_id": 1000000037,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852b6ab16f2f783ac50dd6c"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "6852b6ab16f2f783ac50dd6d"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852b6ab16f2f783ac50dd6e"
+        }
+      ],
+      "total": 150,
+      "createdAt": "2025-06-18T12:52:59.101Z",
+      "__v": 0,
+      "billNo": 130
+    },
+    {
+      "_id": 1000000038,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852b6af16f2f783ac50dd71"
+        },
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "6852b6af16f2f783ac50dd72"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852b6af16f2f783ac50dd73"
+        }
+      ],
+      "total": 120,
+      "createdAt": "2025-06-18T12:53:03.291Z",
+      "__v": 0,
+      "billNo": 131
+    },
+    {
+      "_id": 1000000041,
+      "billNo": 132,
+      "items": [
+        {
+          "name": "Schezwan Noodles",
+          "quantity": 1,
+          "price": 130,
+          "total": 130,
+          "_id": "6852dad953bfeabf1102eac2"
+        },
+        {
+          "name": "Chicken Noodles",
+          "quantity": 1,
+          "price": 150,
+          "total": 150,
+          "_id": "6852dad953bfeabf1102eac3"
+        },
+        {
+          "name": "Egg Noodles",
+          "quantity": 5,
+          "price": 120,
+          "total": 600,
+          "_id": "6852dad953bfeabf1102eac4"
+        }
+      ],
+      "total": 880,
+      "createdAt": "2025-06-18T15:27:21.331Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000042,
+      "billNo": 133,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852dc0d53bfeabf1102ec2e"
+        },
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852dc0d53bfeabf1102ec2f"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "6852dc0d53bfeabf1102ec30"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "6852dc0d53bfeabf1102ec31"
+        }
+      ],
+      "total": 510,
+      "createdAt": "2025-06-18T15:32:29.151Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000043,
+      "billNo": 134,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6852e12653bfeabf1102eda6"
+        },
+        {
+          "name": "Omelette",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6852e12653bfeabf1102eda7"
+        },
+        {
+          "name": "Egg Biryani",
+          "quantity": 1,
+          "price": 150,
+          "total": 150,
+          "_id": "6852e12653bfeabf1102eda8"
+        },
+        {
+          "name": "Boiled Egg",
+          "quantity": 3,
+          "price": 20,
+          "total": 60,
+          "_id": "6852e12653bfeabf1102eda9"
+        }
+      ],
+      "total": 300,
+      "createdAt": "2025-06-18T15:54:14.980Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000046,
+      "billNo": 138,
+      "items": [
+        {
+          "name": "Chicken Noodles",
+          "quantity": 1,
+          "price": 150,
+          "total": 150,
+          "_id": "6852e40253bfeabf1102f4f1"
+        },
+        {
+          "name": "Egg Noodles",
+          "quantity": 1,
+          "price": 120,
+          "total": 120,
+          "_id": "6852e40253bfeabf1102f4f2"
+        },
+        {
+          "name": "Veg Noodles",
+          "quantity": 1,
+          "price": 100,
+          "total": 100,
+          "_id": "6852e40253bfeabf1102f4f3"
+        },
+        {
+          "name": "Schezwan Noodles",
+          "quantity": 1,
+          "price": 130,
+          "total": 130,
+          "_id": "6852e40253bfeabf1102f4f4"
+        }
+      ],
+      "total": 500,
+      "createdAt": "2025-06-18T16:06:26.914Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000047,
+      "billNo": 139,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6853a78f7b34f6004bc74c41"
+        },
+        {
+          "name": "Vada",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "6853a78f7b34f6004bc74c42"
+        },
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "6853a78f7b34f6004bc74c43"
+        },
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6853a78f7b34f6004bc74c44"
+        }
+      ],
+      "total": 150,
+      "createdAt": "2025-06-19T06:00:47.815Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000048,
+      "billNo": 140,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6853b28b3c157f74d032cf2f"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "6853b28b3c157f74d032cf30"
+        }
+      ],
+      "total": 110,
+      "createdAt": "2025-06-19T06:47:39.755Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000049,
+      "billNo": 141,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "68550e7e6e289a1799efbabc"
+        },
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "68550e7e6e289a1799efbabd"
+        }
+      ],
+      "total": 80,
+      "createdAt": "2025-06-20T07:32:14.823Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000050,
+      "billNo": 142,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "68550e906e289a1799efbac1"
+        },
+        {
+          "name": "Chicken Parotta",
+          "quantity": 1,
+          "price": 80,
+          "total": 80,
+          "_id": "68550e906e289a1799efbac2"
+        },
+        {
+          "name": "Egg Parotta",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "68550e906e289a1799efbac3"
+        }
+      ],
+      "total": 170,
+      "createdAt": "2025-06-20T07:32:32.035Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000051,
+      "billNo": 143,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "68565fe0d73c7495aacf6e12"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "68565fe0d73c7495aacf6e13"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "68565fe0d73c7495aacf6e14"
+        }
+      ],
+      "total": 460,
+      "createdAt": "2025-06-21T07:31:44.967Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000052,
+      "billNo": 144,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "68566067d73c7495aacf70f6"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 4,
+          "price": 60,
+          "total": 240,
+          "_id": "68566067d73c7495aacf70f7"
+        }
+      ],
+      "total": 280,
+      "createdAt": "2025-06-21T07:33:59.321Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000053,
+      "billNo": 145,
+      "items": [
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "6856629ddcc655c8b0b44469"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "6856629ddcc655c8b0b4446a"
+        },
+        {
+          "name": "Fish Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "6856629ddcc655c8b0b4446b"
+        },
+        {
+          "name": "Prawn Briyani",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "6856629ddcc655c8b0b4446c"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6856629ddcc655c8b0b4446d"
+        }
+      ],
+      "total": 880,
+      "createdAt": "2025-06-21T07:43:25.123Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000054,
+      "billNo": 146,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685662c2dcc655c8b0b44471"
+        },
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "685662c2dcc655c8b0b44472"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "685662c2dcc655c8b0b44473"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "685662c2dcc655c8b0b44474"
+        }
+      ],
+      "total": 180,
+      "createdAt": "2025-06-21T07:44:02.846Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000056,
+      "billNo": 148,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6856c985dbb371f1332e376f"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6856c985dbb371f1332e3770"
+        }
+      ],
+      "total": 90,
+      "createdAt": "2025-06-21T15:02:29.771Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000057,
+      "billNo": 149,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6856cb6d649751251af5b380"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "6856cb6d649751251af5b381"
+        }
+      ],
+      "total": 90,
+      "createdAt": "2025-06-21T15:10:37.694Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000058,
+      "billNo": 150,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "6856cb72649751251af5b385"
+        }
+      ],
+      "total": 100,
+      "createdAt": "2025-06-21T15:10:42.344Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000076,
+      "billNo": 168,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "6857ada7cc3a94d627b2e52a"
+        },
+        {
+          "name": "Boiled Egg",
+          "quantity": 2,
+          "price": 20,
+          "total": 40,
+          "_id": "6857ada7cc3a94d627b2e52b"
+        }
+      ],
+      "total": 90,
+      "createdAt": "2025-06-22T07:15:51.726Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000077,
+      "billNo": 169,
+      "items": [
+        {
+          "name": "Egg Biryani",
+          "quantity": 5,
+          "price": 150,
+          "total": 750,
+          "_id": "6857adafcc3a94d627b2e52f"
+        }
+      ],
+      "total": 750,
+      "createdAt": "2025-06-22T07:15:59.894Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000079,
+      "billNo": 171,
+      "items": [
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 6,
+          "price": 220,
+          "total": 1320,
+          "_id": "6857ae19cc3a94d627b2e79e"
+        }
+      ],
+      "total": 1320,
+      "createdAt": "2025-06-22T07:17:45.329Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000080,
+      "billNo": 172,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "685b996d679c5adeb7cc6a18"
+        }
+      ],
+      "total": 100,
+      "createdAt": "2025-06-25T06:38:37.204Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000081,
+      "billNo": 173,
+      "items": [
+        {
+          "name": "Vannila",
+          "quantity": 1,
+          "price": 10,
+          "total": 10,
+          "_id": "685b99a2679c5adeb7cc6bb9"
+        },
+        {
+          "name": "Chicken Noodles",
+          "quantity": 7,
+          "price": 150,
+          "total": 1050,
+          "_id": "685b99a2679c5adeb7cc6bba"
+        }
+      ],
+      "total": 1060,
+      "createdAt": "2025-06-25T06:39:30.954Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000083,
+      "billNo": 175,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 4,
+          "price": 50,
+          "total": 200,
+          "_id": "685ba36a55bbc2282b2e44b7"
+        }
+      ],
+      "total": 200,
+      "createdAt": "2025-06-25T07:21:14.153Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000084,
+      "billNo": 176,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 40,
+          "price": 50,
+          "total": 2000,
+          "_id": "685bbbea560d33d9625a73c7"
+        }
+      ],
+      "total": 2000,
+      "createdAt": "2025-06-25T09:05:46.905Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000085,
+      "billNo": 177,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685cfd7998332855a59a32ad"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 3,
+          "price": 220,
+          "total": 660,
+          "_id": "685cfd7998332855a59a32ae"
+        }
+      ],
+      "total": 710,
+      "createdAt": "2025-06-26T07:57:45.042Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000086,
+      "billNo": 178,
+      "items": [
+        {
+          "name": "Chicken Briyani",
+          "quantity": 6,
+          "price": 220,
+          "total": 1320,
+          "_id": "685d61acbfee822612edfd57"
+        }
+      ],
+      "total": 1320,
+      "createdAt": "2025-06-26T15:05:16.376Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000087,
+      "billNo": 179,
+      "items": [
+        {
+          "name": "Kulcha",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "685d6212bfee822612edfdfd"
+        },
+        {
+          "name": "Plain Naan",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "685d6212bfee822612edfdfe"
+        },
+        {
+          "name": "Plain Roti",
+          "quantity": 1,
+          "price": 20,
+          "total": 20,
+          "_id": "685d6212bfee822612edfdff"
+        }
+      ],
+      "total": 160,
+      "createdAt": "2025-06-26T15:06:58.377Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000088,
+      "billNo": 180,
+      "items": [
+        {
+          "name": "Idly",
+          "quantity": 15,
+          "price": 30,
+          "total": 450,
+          "_id": "685d6a30bfee822612ee02d0"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 2,
+          "price": 200,
+          "total": 400,
+          "_id": "685d6a30bfee822612ee02d1"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 39,
+          "price": 250,
+          "total": 9750,
+          "_id": "685d6a30bfee822612ee02d2"
+        }
+      ],
+      "total": 10600,
+      "createdAt": "2025-06-26T15:41:36.828Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000089,
+      "billNo": 181,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685d6f043bdb3fd617ef5487"
+        },
+        {
+          "name": "Chicken Briyani",
+          "quantity": 2,
+          "price": 220,
+          "total": 440,
+          "_id": "685d6f043bdb3fd617ef5488"
+        }
+      ],
+      "total": 490,
+      "createdAt": "2025-06-26T16:02:12.490Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000090,
+      "billNo": 182,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 4,
+          "price": 50,
+          "total": 200,
+          "_id": "685d762d3bdb3fd617ef55ca"
+        }
+      ],
+      "total": 200,
+      "createdAt": "2025-06-26T16:32:45.448Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000091,
+      "billNo": 183,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 3,
+          "price": 50,
+          "total": 150,
+          "_id": "685d765e3bdb3fd617ef55d0"
+        }
+      ],
+      "total": 150,
+      "createdAt": "2025-06-26T16:33:34.513Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000092,
+      "billNo": 184,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 3,
+          "price": 50,
+          "total": 150,
+          "_id": "685d7aa42b87891835986350"
+        }
+      ],
+      "total": 150,
+      "createdAt": "2025-06-26T16:51:48.893Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000093,
+      "billNo": 185,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "685d7add2b878918359863f4"
+        },
+        {
+          "name": "Paneer Tikka",
+          "quantity": 1,
+          "price": 180,
+          "total": 180,
+          "_id": "685d7add2b878918359863f5"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685d7add2b878918359863f6"
+        }
+      ],
+      "total": 440,
+      "createdAt": "2025-06-26T16:52:45.187Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000094,
+      "billNo": 186,
+      "items": [
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "685d7e7420d229726dbc2fbd"
+        },
+        {
+          "name": "Poori",
+          "quantity": 3,
+          "price": 40,
+          "total": 120,
+          "_id": "685d7e7420d229726dbc2fbe"
+        }
+      ],
+      "total": 180,
+      "createdAt": "2025-06-26T17:08:04.651Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000095,
+      "billNo": 187,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 3,
+          "price": 50,
+          "total": 150,
+          "_id": "685d7e8620d229726dbc2fc5"
+        },
+        {
+          "name": "Idly",
+          "quantity": 3,
+          "price": 30,
+          "total": 90,
+          "_id": "685d7e8620d229726dbc2fc6"
+        }
+      ],
+      "total": 240,
+      "createdAt": "2025-06-26T17:08:22.014Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000096,
+      "billNo": 188,
+      "items": [
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "685d7ea020d229726dbc3074"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "685d7ea020d229726dbc3075"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685d7ea020d229726dbc3076"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 3,
+          "price": 250,
+          "total": 750,
+          "_id": "685d7ea020d229726dbc3077"
+        }
+      ],
+      "total": 1200,
+      "createdAt": "2025-06-26T17:08:48.619Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000097,
+      "billNo": 189,
+      "items": [
+        {
+          "name": "Idly",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "685d835c99e75cdfc1509b60"
+        },
+        {
+          "name": "Dosa",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "685d835c99e75cdfc1509b61"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685d835c99e75cdfc1509b62"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 8,
+          "price": 200,
+          "total": 1600,
+          "_id": "685d835c99e75cdfc1509b63"
+        }
+      ],
+      "total": 1950,
+      "createdAt": "2025-06-26T17:29:00.525Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000098,
+      "billNo": 190,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685d837799e75cdfc1509c1f"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685d837799e75cdfc1509c20"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 8,
+          "price": 200,
+          "total": 1600,
+          "_id": "685d837799e75cdfc1509c21"
+        }
+      ],
+      "total": 1870,
+      "createdAt": "2025-06-26T17:29:27.801Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000099,
+      "billNo": 191,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 3,
+          "price": 50,
+          "total": 150,
+          "_id": "685d87223a872a85edad4080"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685d87223a872a85edad4081"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 1,
+          "price": 250,
+          "total": 250,
+          "_id": "685d87223a872a85edad4082"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "685d87223a872a85edad4083"
+        },
+        {
+          "name": "Fish Tikka",
+          "quantity": 5,
+          "price": 220,
+          "total": 1100,
+          "_id": "685d87223a872a85edad4084"
+        }
+      ],
+      "total": 1920,
+      "createdAt": "2025-06-26T17:45:06.067Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000100,
+      "billNo": 192,
+      "items": [
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 4,
+          "price": 220,
+          "total": 880,
+          "_id": "685d87413a872a85edad414b"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 1,
+          "price": 250,
+          "total": 250,
+          "_id": "685d87413a872a85edad414c"
+        },
+        {
+          "name": "Fish Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685d87413a872a85edad414d"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 4,
+          "price": 200,
+          "total": 800,
+          "_id": "685d87413a872a85edad414e"
+        }
+      ],
+      "total": 2150,
+      "createdAt": "2025-06-26T17:45:37.219Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000101,
+      "billNo": 193,
+      "items": [
+        {
+          "name": "Chicken Briyani",
+          "quantity": 5,
+          "price": 220,
+          "total": 1100,
+          "_id": "685e0012f7746b8b9c731f72"
+        }
+      ],
+      "total": 1100,
+      "createdAt": "2025-06-27T02:21:06.204Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000102,
+      "billNo": 194,
+      "items": [
+        {
+          "name": "yellani",
+          "quantity": 1,
+          "price": 20,
+          "total": 20,
+          "_id": "685e31ba8a6b78ed7a65e183"
+        }
+      ],
+      "total": 20,
+      "createdAt": "2025-06-27T05:52:58.664Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000103,
+      "billNo": 195,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685e382bf89f03286175ed5b"
+        }
+      ],
+      "total": 50,
+      "createdAt": "2025-06-27T06:20:27.379Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000104,
+      "billNo": 196,
+      "items": [
+        {
+          "name": "saambaar",
+          "quantity": 1,
+          "price": 5,
+          "total": 5,
+          "_id": "685e41c9819a7f5de5a9ffb7"
+        },
+        {
+          "name": "Paneer Tikka",
+          "quantity": 1,
+          "price": 180,
+          "total": 180,
+          "_id": "685e41c9819a7f5de5a9ffb8"
+        },
+        {
+          "name": "Jeera Rice",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "685e41c9819a7f5de5a9ffb9"
+        }
+      ],
+      "total": 245,
+      "createdAt": "2025-06-27T07:01:29.610Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000105,
+      "billNo": 197,
+      "items": [
+        {
+          "name": "Paneer Tikka",
+          "quantity": 1,
+          "price": 180,
+          "total": 180,
+          "_id": "685e456eb2782e274144d843"
+        },
+        {
+          "name": "Egg Briyani",
+          "quantity": 1,
+          "price": 150,
+          "total": 150,
+          "_id": "685e456eb2782e274144d844"
+        }
+      ],
+      "total": 330,
+      "createdAt": "2025-06-27T07:17:02.329Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000106,
+      "billNo": 198,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685e518ddb976e7dbdc9fadb"
+        },
+        {
+          "name": "Paneer Tikka",
+          "quantity": 1,
+          "price": 180,
+          "total": 180,
+          "_id": "685e518ddb976e7dbdc9fadc"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 1,
+          "price": 250,
+          "total": 250,
+          "_id": "685e518ddb976e7dbdc9fadd"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 2,
+          "price": 200,
+          "total": 400,
+          "_id": "685e518ddb976e7dbdc9fade"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685e518ddb976e7dbdc9fadf"
+        }
+      ],
+      "total": 1100,
+      "createdAt": "2025-06-27T08:08:45.453Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000107,
+      "billNo": 199,
+      "items": [
+        {
+          "name": "Paneer Tikka",
+          "quantity": 1,
+          "price": 180,
+          "total": 180,
+          "_id": "685e609c17a1ad2dc4a8f9a3"
+        },
+        {
+          "name": "Chicken Malai Tikka",
+          "quantity": 3,
+          "price": 220,
+          "total": 660,
+          "_id": "685e609c17a1ad2dc4a8f9a4"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "quantity": 1,
+          "price": 250,
+          "total": 250,
+          "_id": "685e609c17a1ad2dc4a8f9a5"
+        },
+        {
+          "name": "Chicken Tikka",
+          "quantity": 3,
+          "price": 200,
+          "total": 600,
+          "_id": "685e609c17a1ad2dc4a8f9a6"
+        }
+      ],
+      "total": 1690,
+      "createdAt": "2025-06-27T09:13:00.399Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000108,
+      "billNo": 200,
+      "items": [
+        {
+          "name": "Egg Parotta",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "685e60bc17a1ad2dc4a8f9af"
+        },
+        {
+          "name": "Chicken Parotta",
+          "quantity": 2,
+          "price": 80,
+          "total": 160,
+          "_id": "685e60bc17a1ad2dc4a8f9b0"
+        },
+        {
+          "name": "Plain Parotta",
+          "quantity": 1,
+          "price": 30,
+          "total": 30,
+          "_id": "685e60bc17a1ad2dc4a8f9b1"
+        }
+      ],
+      "total": 290,
+      "createdAt": "2025-06-27T09:13:32.229Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000109,
+      "billNo": 201,
+      "items": [
+        {
+          "name": "Prawn Briyani",
+          "quantity": 1,
+          "price": 200,
+          "total": 200,
+          "_id": "685e613317a1ad2dc4a8fb66"
+        },
+        {
+          "name": "Veg Briyani",
+          "quantity": 2,
+          "price": 120,
+          "total": 240,
+          "_id": "685e613317a1ad2dc4a8fb67"
+        },
+        {
+          "name": "Mutton Briyani",
+          "quantity": 1,
+          "price": 220,
+          "total": 220,
+          "_id": "685e613317a1ad2dc4a8fb68"
+        },
+        {
+          "name": "Jeera Rice",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "685e613317a1ad2dc4a8fb69"
+        }
+      ],
+      "total": 720,
+      "createdAt": "2025-06-27T09:15:31.308Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000110,
+      "billNo": 202,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 2,
+          "price": 50,
+          "total": 100,
+          "_id": "685e617817a1ad2dc4a8fb76"
+        }
+      ],
+      "total": 100,
+      "createdAt": "2025-06-27T09:16:40.826Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000112,
+      "billNo": 204,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 3,
+          "price": 40,
+          "total": 120,
+          "_id": "685e6ea1b1c190cc9ec6cf1b"
+        }
+      ],
+      "total": 120,
+      "createdAt": "2025-06-27T10:12:49.464Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000113,
+      "billNo": 205,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "685e757313a4cefaf1bf6002"
+        },
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685e757313a4cefaf1bf6003"
+        }
+      ],
+      "total": 90,
+      "createdAt": "2025-06-27T10:41:55.539Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000114,
+      "billNo": 206,
+      "items": [
+        {
+          "name": "Idly",
+          "quantity": 2,
+          "price": 30,
+          "total": 60,
+          "_id": "685eaa8cc4e3bedf3989be68"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 1,
+          "price": 60,
+          "total": 60,
+          "_id": "685eaa8cc4e3bedf3989be69"
+        }
+      ],
+      "total": 120,
+      "createdAt": "2025-06-27T14:28:28.712Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000115,
+      "billNo": 207,
+      "items": [
+        {
+          "name": "Dosa",
+          "quantity": 1,
+          "price": 50,
+          "total": 50,
+          "_id": "685eadb26f5a3151996b522a"
+        },
+        {
+          "name": "Uttapam",
+          "quantity": 2,
+          "price": 60,
+          "total": 120,
+          "_id": "685eadb26f5a3151996b522b"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "685eadb26f5a3151996b522c"
+        }
+      ],
+      "total": 210,
+      "createdAt": "2025-06-27T14:41:53.981Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000117,
+      "billNo": 209,
+      "items": [
+        {
+          "name": "cold coffee",
+          "quantity": 1,
+          "price": 100,
+          "total": 100,
+          "_id": "685ec8d94b1a577a717386dc"
+        }
+      ],
+      "total": 100,
+      "createdAt": "2025-06-27T16:37:45.534Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000118,
+      "billNo": 210,
+      "items": [
+        {
+          "name": "Poori",
+          "quantity": 2,
+          "price": 40,
+          "total": 80,
+          "_id": "685f7f028b9f0148e1db3083"
+        }
+      ],
+      "total": 80,
+      "createdAt": "2025-06-28T05:34:58.912Z",
+      "__v": 0
+    },
+    {
+      "_id": 1000000119,
+      "billNo": 211,
+      "items": [
+        {
+          "name": "Uttapam",
+          "quantity": 3,
+          "price": 60,
+          "total": 180,
+          "_id": "685f7f068b9f0148e1db3089"
+        },
+        {
+          "name": "Poori",
+          "quantity": 1,
+          "price": 40,
+          "total": 40,
+          "_id": "685f7f068b9f0148e1db308a"
+        }
+      ],
+      "total": 220,
+      "createdAt": "2025-06-28T05:35:02.231Z",
+      "__v": 0
+    }
+  ],
+  "counter": 1000000119,
+  "lastSaved": "2025-06-28T05:46:45.124Z"
+}

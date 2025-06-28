@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 interface AddDishModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (dishData: { name: string; price: number; isVeg: boolean; category: string }) => void;
+  onAdd: (dishData: { name: string; price: number; isVeg: boolean; category: string; barcode?: string }) => void;
 }
 
 const AddDishModal: React.FC<AddDishModalProps> = ({ isOpen, onClose, onAdd }) => {
@@ -12,6 +12,7 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ isOpen, onClose, onAdd }) =
   const [isVeg, setIsVeg] = useState<boolean>(true);
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
+  const [barcode, setBarcode] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -44,12 +45,14 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ isOpen, onClose, onAdd }) =
         name: dishName.trim(),
         price: Number(price),
         isVeg,
-        category
+        category,
+        barcode: barcode.trim() || undefined
       });
       setDishName('');
       setPrice('');
       setIsVeg(true);
       setCategory(categories[0] || '');
+      setBarcode('');
       onClose();
     }
   };
@@ -114,6 +117,22 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ isOpen, onClose, onAdd }) =
             <option value="veg">Veg</option>
             <option value="nonveg">Non Veg</option>
           </select>
+        </div>
+
+        <div className="mb-6">
+          <label className="block mb-2">
+            Barcode (Optional)
+          </label>
+          <input
+            type="text"
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            placeholder="Enter barcode for scanning"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+          />
+          <div className="text-xs text-gray-500 mt-1">
+            💡 Add a barcode to enable quick scanning during billing
+          </div>
         </div>
 
         <div className="flex justify-end gap-3">

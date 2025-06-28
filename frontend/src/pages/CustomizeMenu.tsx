@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import AddCategoryModal from '../components/modals/AddCategoryModal';
 import AddDishModal from '../components/modals/AddDishModal';
+import { API_URL } from '../services/api';
 
 interface MenuItem {
   _id: string;
@@ -13,6 +14,7 @@ interface MenuItem {
   isAvailable: boolean;
   isDeleted?: boolean;
   deletedAt?: string;
+  barcode?: string;
 }
 
 const getAuthHeaders = () => {
@@ -51,7 +53,7 @@ const CustomizeMenu: React.FC = () => {
   const fetchMenuItems = async () => {
     try {
       // Fetch all menu items including unavailable ones
-      const response = await fetch("http://localhost:5000/api/menu-items/all", {
+      const response = await fetch(`${API_URL}/menu-items/all`, {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
@@ -75,7 +77,7 @@ const CustomizeMenu: React.FC = () => {
 
   const handleAddCategory = async (categoryName: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/menu-items', {
+      const response = await fetch(`${API_URL}/menu-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,9 +100,9 @@ const CustomizeMenu: React.FC = () => {
     }
   };
 
-  const handleAddDish = async (dishData: { name: string; price: number; isVeg: boolean; category: string }) => {
+  const handleAddDish = async (dishData: { name: string; price: number; isVeg: boolean; category: string; barcode?: string }) => {
     try {
-      const response = await fetch('http://localhost:5000/api/menu-items', {
+      const response = await fetch(`${API_URL}/menu-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,12 +114,16 @@ const CustomizeMenu: React.FC = () => {
           isDeleted: false
         }),
       });
-      
+
       if (response.ok) {
         fetchMenuItems();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error adding dish');
       }
     } catch (error) {
       console.error('Error adding dish:', error);
+      alert('Error adding dish');
     }
   };
 
@@ -126,7 +132,7 @@ const CustomizeMenu: React.FC = () => {
       const item = menuItems.find(item => item._id === itemId);
       if (!item) return;
 
-      const response = await fetch(`http://localhost:5000/api/menu-items/${itemId}/toggle-availability`, {
+      const response = await fetch(`${API_URL}/menu-items/${itemId}/toggle-availability`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +160,7 @@ const CustomizeMenu: React.FC = () => {
 
   const handleDelete = async (itemId: string) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/menu-items/${itemId}`, {
+      const response = await fetch(`${API_URL}/menu-items/${itemId}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -176,7 +182,7 @@ const CustomizeMenu: React.FC = () => {
 
   const handleUpdate = async (updatedItem: MenuItem) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/menu-items/${updatedItem._id}`, {
+      const response = await fetch(`${API_URL}/menu-items/${updatedItem._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -484,6 +490,26 @@ const CustomizeMenu: React.FC = () => {
                     <option value="available">Available</option>
                     <option value="unavailable">Unavailable</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Barcode (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editingItem.barcode || ''}
+                    onChange={(e) =>
+                      setEditingItem({
+                        ...editingItem,
+                        barcode: e.target.value,
+                      })
+                    }
+                    placeholder="Enter barcode for scanning"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[rgb(56,224,120)] focus:ring-[rgb(56,224,120)]"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    💡 Add a barcode to enable quick scanning during billing
+                  </div>
                 </div>
               </div>
               <div className="mt-6 flex justify-end gap-3">
